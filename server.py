@@ -55,6 +55,7 @@ from core.digest import DigestError, preview_digest, generate_digest, enrich_dig
 from core.database import get_digest, list_digests
 from core.pdf_export import digest_pdf
 from core.config import ALLOW_WATCHLIST_UPLOAD
+from core.auth import BasicAuthMiddleware
 from core.playbooks import get_all_playbooks, get_playbook, generate_playbook_report
 from core.url_tracer import trace_url_redirects
 from core.deobfuscator import deobfuscate_payload
@@ -81,6 +82,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Added last so it runs first: no route is reachable without the login when auth is enabled.
+app.add_middleware(BasicAuthMiddleware)
 
 km = KeyManager()
 engine = EnrichmentEngine(km)
@@ -228,6 +231,12 @@ XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
 MAX_WATCHLIST_UPLOAD = 5 * 1024 * 1024
 
 
+
+
+@app.get("/healthz")
+def healthz():
+    """Liveness probe for Docker / Render. Public even when login is enabled, so it returns nothing else."""
+    return {"status": "ok"}
 
 
 @app.get("/api/status")

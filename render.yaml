@@ -4,7 +4,13 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
     envVars:
+      # Login for the whole app (set both in the Render dashboard; the service is public otherwise)
+      - key: LAZYSOC_AUTH_USER
+        sync: false
+      - key: LAZYSOC_AUTH_PASSWORD
+        sync: false
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: ENV

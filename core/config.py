@@ -40,6 +40,12 @@ SHODAN_INTERNETDB_URL = "https://internetdb.shodan.io"
 NVD_API_KEY = os.getenv("NVD_API_KEY", "")
 GREYNOISE_API_KEY = os.getenv("GREYNOISE_API_KEY", "")
 
+# Optional login (HTTP Basic Auth) for every page and API call except /healthz.
+# Enabled when a user and a password (or its SHA-256 hex digest) are set.
+AUTH_USER = os.getenv("LAZYSOC_AUTH_USER", "")
+AUTH_PASSWORD = os.getenv("LAZYSOC_AUTH_PASSWORD", "")
+AUTH_PASSWORD_SHA256 = os.getenv("LAZYSOC_AUTH_PASSWORD_SHA256", "").strip().lower()
+
 # Critical tools watchlist (internal + customer inventory). Kept under data/ so it is never committed.
 WATCHLIST_FILE = Path(os.getenv("WATCHLIST_FILE", str(DATA_DIR / "watchlist.json")))
 
