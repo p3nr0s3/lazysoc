@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 import core.ai_summary as ai
+import core.llm as llm
 
 ARTICLE = {
     "title": "FortiGate zero-day exploited",
@@ -43,14 +44,14 @@ def _fake_client(monkeypatch, stop_reason="end_turn", text=None):
         content=[SimpleNamespace(type="text", text=json.dumps(SUMMARY) if text is None else text)],
     )
     messages = FakeMessages(response)
-    monkeypatch.setattr(ai, "_get_client", lambda: SimpleNamespace(beta=SimpleNamespace(messages=messages)))
+    monkeypatch.setattr(llm, "_get_client", lambda: SimpleNamespace(beta=SimpleNamespace(messages=messages)))
     return messages
 
 
 @pytest.fixture(autouse=True)
 def in_memory_store(monkeypatch):
     store = {}
-    monkeypatch.setattr(ai, "AI_SUMMARY_ENABLED", True)
+    monkeypatch.setattr(llm, "AI_SUMMARY_ENABLED", True)
     monkeypatch.setattr(ai, "get_ai_summary", lambda key: store.get(key))
     monkeypatch.setattr(ai, "save_ai_summary", lambda key, link, model, summary: store.__setitem__(
         key, {"model": model, "summary": summary, "created_at": "now"}))
@@ -88,7 +89,8 @@ def test_request_sends_only_article_text(monkeypatch):
 def test_refusal_is_reported(monkeypatch):
     _fake_client(monkeypatch, stop_reason="refusal", text="")
     result = ai.summarize_article(ARTICLE, force=True)
-    assert result == {"success": False, "error_type": "REFUSAL", "error": "Model menolak meringkas artikel ini."}
+    assert result["success"] is False
+    assert result["error_type"] == "REFUSAL"
 
 
 def test_invalid_json_is_reported(monkeypatch):
@@ -98,5 +100,5 @@ def test_invalid_json_is_reported(monkeypatch):
 
 
 def test_disabled_by_config(monkeypatch):
-    monkeypatch.setattr(ai, "AI_SUMMARY_ENABLED", False)
+    monkeypatch.setattr(llm, "AI_SUMMARY_ENABLED", False)
     assert ai.summarize_article(ARTICLE)["error_type"] == "DISABLED"

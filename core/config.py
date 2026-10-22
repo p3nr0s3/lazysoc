@@ -47,6 +47,17 @@ WATCHLIST_FILE = Path(os.getenv("WATCHLIST_FILE", str(DATA_DIR / "watchlist.json
 AI_SUMMARY_ENABLED = os.getenv("AI_SUMMARY_ENABLED", "true").lower() in ("true", "1", "yes")
 AI_SUMMARY_MODEL = os.getenv("AI_SUMMARY_MODEL", "claude-opus-5-5")
 AI_SUMMARY_EFFORT = os.getenv("AI_SUMMARY_EFFORT", "low")
+AI_DEFAULT_PROVIDER = os.getenv("AI_DEFAULT_PROVIDER", "claude").lower()  # "claude" or "local"
+
+# Local LLM via an OpenAI-compatible server (Ollama, LM Studio, vLLM, llama.cpp). Configured here only,
+# never taken from requests, so the summarize endpoints cannot be pointed at arbitrary hosts.
+LOCAL_LLM_BASE_URL = os.getenv("LOCAL_LLM_BASE_URL", "").rstrip("/")  # e.g. http://localhost:11434/v1
+LOCAL_LLM_MODEL = os.getenv("LOCAL_LLM_MODEL", "")
+LOCAL_LLM_API_KEY = os.getenv("LOCAL_LLM_API_KEY", "")
+LOCAL_LLM_TIMEOUT_SECONDS = int(os.getenv("LOCAL_LLM_TIMEOUT_SECONDS", "300"))
+
+# Watchlist upload from the web UI (the app has no authentication; disable on shared instances).
+ALLOW_WATCHLIST_UPLOAD = os.getenv("ALLOW_WATCHLIST_UPLOAD", "true").lower() in ("true", "1", "yes")
 
 # Free tier limits (reference)
 # VirusTotal: 4 requests / minute, 500 requests / day

@@ -67,6 +67,41 @@ def init_db():
 
         cursor.execute(
             """
+            CREATE TABLE IF NOT EXISTS feed_articles (
+                link TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                source TEXT,
+                source_key TEXT,
+                category TEXT,
+                summary TEXT,
+                content TEXT,
+                pub_date TEXT,
+                published_at TIMESTAMP NOT NULL,
+                fetched_at TIMESTAMP NOT NULL
+            )
+            """
+        )
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_feed_articles_published ON feed_articles (published_at)")
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS digests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                period_start TEXT NOT NULL,
+                period_end TEXT NOT NULL,
+                owner TEXT,
+                mode TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                model TEXT,
+                article_count INTEGER NOT NULL,
+                digest_json TEXT NOT NULL
+            )
+            """
+        )
+
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS ai_summaries (
                 article_key TEXT PRIMARY KEY,
                 link TEXT,
@@ -289,6 +324,97 @@ def save_ai_summary(article_key: str, link: str, model: str, summary: Dict[str, 
             (article_key, link, model, json.dumps(summary)),
         )
         conn.commit()
+
+
+def save_feed_articles(articles: List[Dict[str, Any]]):
+    """Upserts fetched RSS articles so digests can cover days the live feed no longer shows."""
+    now_str = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.executemany(
+            """
+            INSERT INTO feed_articles (link, title, source, source_key, category, summary, content, pub_date, published_at, fetched_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(link) DO UPDATE SET
+                title = excluded.title,
+                category = excluded.category,
+                summary = excluded.summary,
+                content = excluded.content
+            """,
+            [
+                (
+                    a["link"], a["title"], a.get("source"), a.get("source_key"), a.get("category"),
+                    a.get("summary"), a.get("content"), a.get("pub_date"), a.get("published_at") or now_str, now_str,
+                )
+                for a in articles if a.get("link")
+            ],
+        )
+        conn.commit()
+
+
+def get_feed_articles_between(start: str, end: str, limit: int = 1000) -> List[Dict[str, Any]]:
+    """Returns stored articles published in [start, end) (UTC 'YYYY-MM-DD HH:MM:SS'), newest first."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT link, title, source, source_key, category, summary, content, pub_date, published_at
+            FROM feed_articles
+            WHERE published_at >= ? AND published_at < ?
+            ORDER BY published_at DESC
+            LIMIT ?
+            """,
+            (start, end, limit),
+        )
+        return [dict(r) for r in cursor.fetchall()]
+
+
+def get_feed_article(link: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM feed_articles WHERE link = ?", (link,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def save_digest(digest: Dict[str, Any]) -> int:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO digests (period_start, period_end, owner, mode, provider, model, article_count, digest_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                digest["period_start"], digest["period_end"], digest.get("owner"), digest["mode"],
+                digest["provider"], digest.get("model"), digest["article_count"], json.dumps(digest),
+            ),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_digest(digest_id: int) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, created_at, digest_json FROM digests WHERE id = ?", (digest_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return {**json.loads(row["digest_json"]), "id": row["id"], "created_at": row["created_at"]}
+
+
+def list_digests(limit: int = 20) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, created_at, period_start, period_end, owner, mode, provider, model, article_count
+            FROM digests ORDER BY id DESC LIMIT ?
+            """,
+            (limit,),
+        )
+        return [dict(r) for r in cursor.fetchall()]
 
 
 def get_scan_history(limit: int = 20) -> List[Dict[str, Any]]:

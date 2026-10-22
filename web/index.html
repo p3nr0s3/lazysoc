@@ -1310,18 +1310,90 @@
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center p-0.5 rounded-lg bg-[#090d16] border border-cyber-border" role="group" aria-label="Mode berita">
+              <button onclick="setFeedMode('general')" id="feed-mode-general" class="px-2.5 py-1 rounded-md font-bold bg-cyber-cyan/15 text-cyber-cyan">General</button>
+              <button onclick="setFeedMode('critical')" id="feed-mode-critical" class="px-2.5 py-1 rounded-md font-bold text-slate-400 hover:text-white">Critical Tools</button>
+            </div>
             <select id="feed-owner-filter" onchange="setFeedOwnerFilter(this.value)" class="bg-[#090d16] border border-cyber-border rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:border-amber-400">
               <option value="">Semua owner</option>
             </select>
-            <label class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[#090d16] border border-cyber-border text-slate-300 cursor-pointer select-none">
-              <input type="checkbox" id="feed-mystack-toggle" onchange="setFeedMyStackOnly(this.checked)" class="accent-amber-500">
-              My Stack only
-            </label>
+            <button onclick="toggleDigestPanel()" id="btn-digest" class="px-3 py-1.5 rounded-lg bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/40 hover:bg-cyber-cyan/25 font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>Ringkasan Periode</span>
+            </button>
             <button onclick="toggleKevExposurePanel()" id="btn-kev-exposure" class="px-3 py-1.5 rounded-lg bg-red-500/15 text-red-300 border border-red-500/40 hover:bg-red-500/25 font-bold flex items-center gap-1.5 transition">
               <i data-lucide="flame" class="w-3.5 h-3.5"></i>
               <span>KEV Exposure</span>
             </button>
+            <button onclick="toggleWatchlistManager()" id="btn-watchlist-manage" class="px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>Kelola List</span>
+            </button>
           </div>
+        </div>
+
+        <!-- Watchlist Manager: upload / download critical tools list -->
+        <div id="watchlist-manager-panel" class="hidden rounded-xl border border-amber-500/30 bg-[#090d16] p-4 space-y-3 text-xs font-mono">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <h4 class="font-bold text-amber-300 flex items-center gap-2"><i data-lucide="database" class="w-3.5 h-3.5"></i> List Critical Tools</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Upload .xlsx / .csv (template, atau satu sheet per customer) atau .json. Produk dikenali otomatis dari katalog (alias, CPE, KEV).</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <a href="/api/watchlist/template" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Template</a>
+              <a href="/api/watchlist/export" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Download list saat ini</a>
+              <label class="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Pilih file
+                <input type="file" id="watchlist-upload-input" accept=".xlsx,.csv,.json" class="hidden" onchange="previewWatchlistUpload(this.files[0])">
+              </label>
+            </div>
+          </div>
+          <div id="watchlist-upload-result"></div>
+        </div>
+
+        <!-- Period Digest Panel: summarize filtered news for a date range -->
+        <div id="digest-panel" class="hidden rounded-xl border border-cyber-cyan/30 bg-[#090d16] p-4 space-y-3 text-xs font-mono">
+          <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
+            <div>
+              <h4 class="font-bold text-cyber-cyan flex items-center gap-2"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Ringkasan Periode</h4>
+              <p id="digest-scope" class="text-[11px] text-slate-400 mt-0.5">-</p>
+            </div>
+            <div class="flex flex-wrap items-end gap-2">
+              <label class="flex flex-col gap-1 text-[10px] text-slate-500">Periode
+                <select id="digest-days" onchange="onDigestPeriodChange()" class="bg-[#0b1220] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                  <option value="1">Hari ini</option>
+                  <option value="3">3 hari terakhir</option>
+                  <option value="7" selected>7 hari terakhir</option>
+                  <option value="14">14 hari terakhir</option>
+                  <option value="30">30 hari terakhir</option>
+                  <option value="custom">Pilih tanggal...</option>
+                </select>
+              </label>
+              <label id="digest-custom-from" class="hidden flex-col gap-1 text-[10px] text-slate-500">Dari
+                <input type="date" id="digest-start" onchange="previewDigest()" class="bg-[#0b1220] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+              </label>
+              <label id="digest-custom-to" class="hidden flex-col gap-1 text-[10px] text-slate-500">Sampai
+                <input type="date" id="digest-end" onchange="previewDigest()" class="bg-[#0b1220] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+              </label>
+              <label class="flex flex-col gap-1 text-[10px] text-slate-500">Provider AI
+                <select id="ai-provider-select" class="bg-[#0b1220] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                  <option value="claude">Claude API</option>
+                  <option value="local">Local LLM</option>
+                </select>
+              </label>
+              <button onclick="generateDigest()" id="btn-digest-generate" class="px-3 py-1.5 rounded-lg bg-cyber-cyan/15 hover:bg-cyber-cyan/25 border border-cyber-cyan/40 text-cyber-cyan font-bold flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Buat ringkasan
+              </button>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-[11px]">
+            <span class="text-slate-500">Riwayat:</span>
+            <select id="digest-history" onchange="loadDigest(this.value)" class="bg-[#0b1220] border border-cyber-border rounded px-2 py-1 text-slate-200 max-w-full">
+              <option value="">Belum ada ringkasan</option>
+            </select>
+          </div>
+          <div id="digest-preview" class="text-[11px] text-slate-400"></div>
+          <div id="digest-result"></div>
         </div>
 
         <!-- KEV Exposure Panel (CISA KEV x watchlist, with NVD version checks) -->
@@ -5169,6 +5241,7 @@ tags:
       if (refreshBtn) refreshBtn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-cyber-cyan border-t-transparent rounded-full animate-spin"></div> Loading...`;
 
       if (!watchlistSummary) loadWatchlistSummary();
+      if (!aiProviders) loadAiProviders();
 
       try {
         const res = await fetch(`/api/feed?source=all&limit=200`);
@@ -5232,6 +5305,7 @@ tags:
 
       filteredFeedArticles = filtered;
       updateWatchlistStatus();
+      if (!document.getElementById('digest-panel')?.classList.contains('hidden')) updateDigestScope();
       renderCurrentFeedPage();
     }
 
@@ -5478,12 +5552,293 @@ tags:
       filterFeedArticles();
       const panel = document.getElementById('kev-exposure-panel');
       if (panel && !panel.classList.contains('hidden')) fetchKevExposure();
+      if (!document.getElementById('digest-panel')?.classList.contains('hidden')) previewDigest();
     }
 
-    function setFeedMyStackOnly(enabled) {
-      feedMyStackOnly = !!enabled;
+    function setFeedMode(mode) {
+      feedMyStackOnly = mode === 'critical';
+      ['general', 'critical'].forEach(m => {
+        const btn = document.getElementById(`feed-mode-${m}`);
+        if (!btn) return;
+        const active = (m === 'critical') === feedMyStackOnly;
+        btn.className = active
+          ? `px-2.5 py-1 rounded-md font-bold ${m === 'critical' ? 'bg-amber-500/20 text-amber-300' : 'bg-cyber-cyan/15 text-cyber-cyan'}`
+          : 'px-2.5 py-1 rounded-md font-bold text-slate-400 hover:text-white';
+      });
       feedCurrentPage = 1;
       filterFeedArticles();
+      if (!document.getElementById('digest-panel')?.classList.contains('hidden')) previewDigest();
+    }
+
+    // ---- Watchlist upload / download ----
+    let pendingWatchlistFile = null;
+
+    function toggleWatchlistManager() {
+      document.getElementById('watchlist-manager-panel')?.classList.toggle('hidden');
+    }
+
+    // Server errors (e.g. a 500 page) are not always JSON; surface the HTTP status instead of a parse error.
+    async function readJsonSafe(res) {
+      try {
+        return await res.json();
+      } catch (err) {
+        return { detail: `Server error (HTTP ${res.status}). Lihat log LazySOC.` };
+      }
+    }
+
+    async function postWatchlistFile(file, apply) {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('apply', apply ? 'true' : 'false');
+      const res = await fetch('/api/watchlist/upload', { method: 'POST', body: form });
+      const data = await readJsonSafe(res);
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      return data;
+    }
+
+    async function previewWatchlistUpload(file) {
+      const box = document.getElementById('watchlist-upload-result');
+      if (!file) return;
+      pendingWatchlistFile = file;
+      box.innerHTML = '<div class="text-slate-400 text-[11px]">Membaca file...</div>';
+      try {
+        const { report } = await postWatchlistFile(file, false);
+        const unmatched = report.unmatched_products || [];
+        box.innerHTML = `
+          <div class="rounded-lg border border-cyber-border bg-[#0b1220] p-3 space-y-2">
+            <div class="text-white font-bold">${escapeHtml(file.name)}</div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+              <div><span class="text-slate-500">Baris:</span> <span class="text-white">${escapeHtml(report.rows)}</span></div>
+              <div><span class="text-slate-500">Produk:</span> <span class="text-white">${escapeHtml(report.assets)}</span></div>
+              <div><span class="text-slate-500">Dikenali katalog:</span> <span class="text-emerald-300">${report.matched_catalog === null ? '-' : escapeHtml(report.matched_catalog)}</span></div>
+              <div><span class="text-slate-500">Dengan versi:</span> <span class="text-cyber-cyan">${escapeHtml(report.with_version)}</span></div>
+            </div>
+            <div class="text-[11px]"><span class="text-slate-500">Owner:</span> <span class="text-slate-200">${escapeHtml((report.owners || []).join(', '))}</span></div>
+            ${unmatched.length ? `<div class="text-[11px] text-amber-300">Tidak dikenali katalog (diimpor sebagai produk custom, cocok berdasarkan nama saja): ${escapeHtml(unmatched.join(', '))}</div>` : ''}
+            <div class="flex items-center gap-2 pt-1">
+              <button onclick="applyWatchlistUpload()" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/50 font-bold">Terapkan (ganti list saat ini)</button>
+              <button onclick="cancelWatchlistUpload()" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border">Batal</button>
+            </div>
+            <p class="text-[10px] text-slate-500">List lama otomatis di-backup di folder data/.</p>
+          </div>`;
+      } catch (err) {
+        box.innerHTML = `<div class="text-red-400 text-[11px]">${escapeHtml(err.message)}</div>`;
+      } finally {
+        document.getElementById('watchlist-upload-input').value = '';
+      }
+    }
+
+    async function applyWatchlistUpload() {
+      const box = document.getElementById('watchlist-upload-result');
+      if (!pendingWatchlistFile) return;
+      try {
+        const data = await postWatchlistFile(pendingWatchlistFile, true);
+        pendingWatchlistFile = null;
+        box.innerHTML = `<div class="text-emerald-400 text-[11px]">Watchlist diperbarui (${escapeHtml(data.report.assets)} produk).${data.backup ? ` Backup: ${escapeHtml(data.backup)}` : ''}</div>`;
+        feedOwnerFilter = '';
+        await loadWatchlistSummary();
+        await fetchCyberFeeds(true);
+      } catch (err) {
+        box.innerHTML = `<div class="text-red-400 text-[11px]">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function cancelWatchlistUpload() {
+      pendingWatchlistFile = null;
+      document.getElementById('watchlist-upload-result').innerHTML = '';
+    }
+
+    // ---- AI providers & period digest ----
+    let aiProviders = null;
+    let currentDigest = null;
+
+    async function loadAiProviders() {
+      try {
+        const res = await fetch('/api/ai/providers');
+        if (!res.ok) throw new Error();
+        aiProviders = await res.json();
+      } catch (err) {
+        aiProviders = null;
+        return;
+      }
+      const select = document.getElementById('ai-provider-select');
+      if (!select) return;
+      const p = aiProviders.providers || {};
+      select.innerHTML = `
+        <option value="claude" ${p.claude?.available ? '' : 'disabled'}>Claude API${p.claude?.model ? ` (${escapeHtml(p.claude.model)})` : ''}</option>
+        <option value="local" ${p.local?.available ? '' : 'disabled'}>Local LLM${p.local?.model ? ` (${escapeHtml(p.local.model)})` : ' (belum dikonfigurasi)'}</option>`;
+      select.value = p[aiProviders.default]?.available ? aiProviders.default : (p.claude?.available ? 'claude' : 'local');
+    }
+
+    function selectedAiProvider() {
+      return document.getElementById('ai-provider-select')?.value || undefined;
+    }
+
+    function toggleDigestPanel() {
+      const panel = document.getElementById('digest-panel');
+      if (!panel) return;
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        if (!aiProviders) loadAiProviders();
+        loadDigestHistory();
+        previewDigest();
+      }
+    }
+
+    function onDigestPeriodChange() {
+      const custom = document.getElementById('digest-days').value === 'custom';
+      ['digest-custom-from', 'digest-custom-to'].forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.toggle('hidden', !custom);
+        el.classList.toggle('flex', custom);
+      });
+      if (custom) {
+        const today = new Date();
+        const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const start = document.getElementById('digest-start');
+        const end = document.getElementById('digest-end');
+        if (!end.value) end.value = iso(today);
+        if (!start.value) start.value = iso(new Date(today.getTime() - 6 * 86400000));
+      }
+      previewDigest();
+    }
+
+    function digestParams() {
+      const days = document.getElementById('digest-days').value;
+      const params = { mode: feedMyStackOnly ? 'critical' : 'general' };
+      if (days === 'custom') {
+        params.start_date = document.getElementById('digest-start').value;
+        params.end_date = document.getElementById('digest-end').value;
+      } else {
+        params.days = parseInt(days, 10);
+      }
+      if (feedOwnerFilter) params.owner = feedOwnerFilter;
+      const q = (document.getElementById('feed-search-input')?.value || '').trim();
+      if (q) params.query = q;
+      return params;
+    }
+
+    function updateDigestScope() {
+      const p = digestParams();
+      const el = document.getElementById('digest-scope');
+      if (el) el.innerText = `Mode ${p.mode === 'critical' ? 'Critical Tools' : 'General'} · ${p.owner ? `owner ${p.owner}` : 'semua owner'}${p.query ? ` · kata kunci "${p.query}"` : ''} (mengikuti filter di atas)`;
+    }
+
+    async function previewDigest() {
+      updateDigestScope();
+      const box = document.getElementById('digest-preview');
+      const p = digestParams();
+      const params = new URLSearchParams();
+      Object.entries(p).forEach(([k, v]) => { if (v !== undefined && v !== '') params.set(k === 'query' ? 'q' : k, v); });
+      box.innerText = 'Menghitung berita pada periode ini...';
+      try {
+        const res = await fetch(`/api/digest/preview?${params}`);
+        const data = await readJsonSafe(res);
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        box.innerHTML = data.total
+          ? `<span class="text-white font-bold">${escapeHtml(data.total)}</span> berita (${escapeHtml(data.period.from)} s/d ${escapeHtml(data.period.to)})${data.total > data.will_summarize ? `, ${escapeHtml(data.will_summarize)} prioritas tertinggi akan diringkas` : ' akan diringkas'}.`
+          : `Tidak ada berita yang cocok pada ${escapeHtml(data.period.from)} s/d ${escapeHtml(data.period.to)}. Riwayat berita tersimpan sejak LazySOC mulai menarik feed.`;
+      } catch (err) {
+        box.innerHTML = `<span class="text-red-400">${escapeHtml(err.message)}</span>`;
+      }
+    }
+
+    async function loadDigestHistory(selectId) {
+      const select = document.getElementById('digest-history');
+      try {
+        const res = await fetch('/api/digests');
+        const data = await readJsonSafe(res);
+        const items = data.digests || [];
+        select.innerHTML = items.length
+          ? '<option value="">Pilih ringkasan sebelumnya...</option>' + items.map(d => `
+              <option value="${escapeHtml(d.id)}">#${escapeHtml(d.id)} · ${escapeHtml(d.period_start)} s/d ${escapeHtml(d.period_end)} · ${d.mode === 'critical' ? 'Critical' : 'General'}${d.owner ? ` · ${escapeHtml(d.owner)}` : ''} · ${escapeHtml(d.article_count)} berita · ${escapeHtml(d.provider)}</option>`).join('')
+          : '<option value="">Belum ada ringkasan</option>';
+        if (selectId) select.value = String(selectId);
+      } catch (err) { /* history is optional */ }
+    }
+
+    async function loadDigest(id) {
+      if (!id) return;
+      const box = document.getElementById('digest-result');
+      box.innerHTML = '<div class="text-slate-400 text-[11px]">Memuat ringkasan...</div>';
+      try {
+        const res = await fetch(`/api/digest/${encodeURIComponent(id)}`);
+        const data = await readJsonSafe(res);
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        renderDigest(data);
+      } catch (err) {
+        box.innerHTML = `<div class="text-red-400 text-[11px]">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function generateDigest() {
+      const box = document.getElementById('digest-result');
+      const btn = document.getElementById('btn-digest-generate');
+      btn.disabled = true;
+      box.innerHTML = '<div class="text-slate-400 text-[11px] flex items-center gap-2"><div class="w-3.5 h-3.5 border-2 border-cyber-cyan border-t-transparent rounded-full animate-spin"></div>Meringkas berita periode ini... (bisa 1-3 menit)</div>';
+      try {
+        const res = await fetch('/api/digest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...digestParams(), provider: selectedAiProvider() }),
+        });
+        const data = await readJsonSafe(res);
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        renderDigest(data);
+        loadDigestHistory(data.id);
+      } catch (err) {
+        box.innerHTML = `<div class="text-red-400 text-[11px]">${escapeHtml(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    const DIGEST_URGENCY = {
+      critical: { label: 'KRITIS', cls: 'bg-red-500/20 text-red-300 border-red-500/50' },
+      high: { label: 'TINGGI', cls: 'bg-amber-500/15 text-amber-300 border-amber-500/40' },
+      medium: { label: 'SEDANG', cls: 'bg-blue-500/15 text-blue-300 border-blue-500/40' },
+      low: { label: 'RENDAH', cls: 'bg-slate-500/15 text-slate-300 border-slate-500/40' },
+    };
+    const EXPLOIT_LABEL = {
+      exploited_in_the_wild: 'Dieksploitasi aktif',
+      public_poc: 'PoC publik',
+      not_reported: 'Eksploitasi belum dilaporkan',
+      not_applicable: 'Bukan kerentanan',
+    };
+
+    function renderDigest(d) {
+      currentDigest = d;
+      const list = items => items && items.length ? `<ul class="list-disc list-inside space-y-0.5 font-sans text-slate-300">${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>` : '';
+      document.getElementById('digest-result').innerHTML = `
+        <div class="rounded-lg border border-cyber-cyan/30 bg-[#0b1220] p-3 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="text-[11px] text-slate-400">#${escapeHtml(d.id)} · ${escapeHtml(d.period_start)} s/d ${escapeHtml(d.period_end)} · ${d.mode === 'critical' ? 'Critical Tools' : 'General'}${d.owner ? ` · ${escapeHtml(d.owner)}` : ''} · ${escapeHtml(d.article_count)} berita · ${escapeHtml(d.provider)} (${escapeHtml(d.model)})</div>
+            <a href="/api/digest/${encodeURIComponent(d.id)}/pdf" class="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 font-bold flex items-center gap-1.5 self-start"><i data-lucide="file-down" class="w-3.5 h-3.5"></i> Export PDF</a>
+          </div>
+          <p class="text-slate-200 font-sans leading-relaxed text-xs">${escapeHtml(d.overview)}</p>
+          ${(d.key_themes || []).length ? `<div><div class="text-[10px] uppercase text-slate-500 mb-1">Tema utama</div>${list(d.key_themes)}</div>` : ''}
+          ${(d.priority_actions || []).length ? `<div><div class="text-[10px] uppercase text-slate-500 mb-1">Tindakan prioritas</div>${list(d.priority_actions)}</div>` : ''}
+          <div class="space-y-2">
+            ${(d.articles || []).map(a => {
+              const u = DIGEST_URGENCY[a.urgency] || DIGEST_URGENCY.low;
+              const products = (a.watchlist_matches || []).map(m => m.level === 'product' ? `${m.product} (${(m.owners || []).join(', ')})` : `Vendor ${m.vendor}`).join('; ');
+              const safeLink = (a.link && /^https?:\/\//.test(a.link)) ? escapeHtml(a.link) : '#';
+              return `
+                <div class="rounded border border-cyber-border/70 p-2.5">
+                  <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold ${u.cls}">${u.label}</span>
+                    <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="text-white font-bold hover:text-cyber-cyan">${escapeHtml(a.headline)}</a>
+                  </div>
+                  <div class="text-[10px] text-slate-500 mb-1">${escapeHtml(a.source)} · ${escapeHtml(a.published_at)} UTC · ${escapeHtml(EXPLOIT_LABEL[a.exploitation] || '')}</div>
+                  <p class="text-[11px] text-slate-300 font-sans">${escapeHtml(a.summary)}</p>
+                  ${products ? `<div class="text-[10px] text-amber-300 mt-1">Watchlist: ${escapeHtml(products)}</div>` : ''}
+                  ${(a.cves || []).length ? `<div class="text-[10px] text-red-300 mt-0.5">CVE: ${escapeHtml(a.cves.join(', '))}</div>` : ''}
+                  ${(a.recommended_actions || []).length ? `<div class="mt-1 text-[11px]">${list(a.recommended_actions)}</div>` : ''}
+                </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      lucide.createIcons();
     }
 
     function toggleKevExposurePanel() {
@@ -5630,7 +5985,7 @@ tags:
       if (productAssets.length) params.set('assets', productAssets.join(','));
       try {
         const res = await fetch(`/api/watchlist/cve/${encodeURIComponent(cveId)}?${params}`);
-        const data = await res.json();
+        const data = await readJsonSafe(res);
         if (!res.ok || !data.found) throw new Error(data.error || data.detail || `HTTP ${res.status}`);
         if (!data.assets.length) {
           box.innerHTML = '<div class="text-emerald-400 text-[11px]">Tidak ada produk watchlist di konfigurasi CPE CVE ini.</div>';
@@ -5656,9 +6011,9 @@ tags:
         const res = await fetch('/api/feed/summarize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ link: article.link, force: !!force }),
+          body: JSON.stringify({ link: article.link, force: !!force, provider: selectedAiProvider() }),
         });
-        const data = await res.json();
+        const data = await readJsonSafe(res);
         if (feedInsightArticle !== article) return; // modal moved on to another article
         if (!res.ok || !data.success) throw new Error(data.error || data.detail || `HTTP ${res.status}`);
         renderAiSummary(data);

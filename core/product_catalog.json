@@ -1,0 +1,1347 @@
+{
+  "version": 1,
+  "description": "Generic product knowledge (aliases, CPE, KEV names, default criticality) used to enrich uploaded watchlists. Contains no owner or deployment data.",
+  "products": [
+    {
+      "id": "fortinet-fortios",
+      "vendor": "Fortinet",
+      "product": "FortiOS / FortiGate",
+      "category": "Firewall / SD-WAN",
+      "criticality": "critical",
+      "aliases": [
+        "FortiOS",
+        "FortiGate"
+      ],
+      "vendor_aliases": [
+        "Fortinet"
+      ],
+      "kev": [
+        {
+          "vendor": "Fortinet",
+          "product": "FortiOS"
+        }
+      ],
+      "cpe": [
+        "fortinet:fortios"
+      ],
+      "import_aliases": [
+        "Forti",
+        "Fortigate"
+      ]
+    },
+    {
+      "id": "fortinet-forticlient",
+      "vendor": "Fortinet",
+      "product": "FortiClient VPN",
+      "category": "VPN Client",
+      "criticality": "critical",
+      "aliases": [
+        "FortiClient",
+        "FortiClient VPN",
+        "FortiClientEMS",
+        "FortiClient EMS"
+      ],
+      "vendor_aliases": [
+        "Fortinet"
+      ],
+      "kev": [
+        {
+          "vendor": "Fortinet",
+          "product": "FortiClient"
+        }
+      ],
+      "cpe": [
+        "fortinet:forticlient",
+        "fortinet:forticlient_enterprise_management_server"
+      ],
+      "import_aliases": [
+        "Fortinet VPN",
+        "Forti VPN"
+      ]
+    },
+    {
+      "id": "fortinet-fortimail",
+      "vendor": "Fortinet",
+      "product": "FortiMail",
+      "category": "Email Gateway",
+      "criticality": "critical",
+      "aliases": [
+        "FortiMail"
+      ],
+      "vendor_aliases": [
+        "Fortinet"
+      ],
+      "kev": [
+        {
+          "vendor": "Fortinet",
+          "product": "FortiMail"
+        }
+      ],
+      "cpe": [
+        "fortinet:fortimail"
+      ]
+    },
+    {
+      "id": "fortinet-fortiweb",
+      "vendor": "Fortinet",
+      "product": "FortiWeb",
+      "category": "WAF",
+      "criticality": "critical",
+      "aliases": [
+        "FortiWeb"
+      ],
+      "vendor_aliases": [
+        "Fortinet"
+      ],
+      "kev": [
+        {
+          "vendor": "Fortinet",
+          "product": "FortiWeb"
+        }
+      ],
+      "cpe": [
+        "fortinet:fortiweb"
+      ]
+    },
+    {
+      "id": "paloalto-panos",
+      "vendor": "Palo Alto Networks",
+      "product": "PAN-OS",
+      "category": "Firewall",
+      "criticality": "critical",
+      "aliases": [
+        "PAN-OS",
+        "GlobalProtect",
+        "Palo Alto Networks firewall",
+        "Palo Alto firewall"
+      ],
+      "vendor_aliases": [
+        "Palo Alto Networks",
+        "Palo Alto"
+      ],
+      "kev": [
+        {
+          "vendor": "Palo Alto Networks",
+          "product": "PAN-OS"
+        }
+      ],
+      "cpe": [
+        "paloaltonetworks:pan-os"
+      ],
+      "import_aliases": [
+        "Palo Alto",
+        "PA-3410",
+        "PA-3220",
+        "PA-3000",
+        "PA-5000"
+      ]
+    },
+    {
+      "id": "paloalto-cortex-xdr",
+      "vendor": "Palo Alto Networks",
+      "product": "Cortex XDR",
+      "category": "XDR",
+      "criticality": "critical",
+      "aliases": [
+        "Cortex XDR"
+      ],
+      "vendor_aliases": [
+        "Palo Alto Networks",
+        "Palo Alto"
+      ],
+      "kev": [
+        {
+          "vendor": "Palo Alto Networks",
+          "product": "Cortex XDR"
+        }
+      ],
+      "cpe": [
+        "paloaltonetworks:cortex_xdr_agent"
+      ]
+    },
+    {
+      "id": "sangfor",
+      "vendor": "Sangfor",
+      "product": "Sangfor IAG / NGAF / WANO",
+      "category": "SWG / Firewall / WAN Optimizer",
+      "criticality": "critical",
+      "aliases": [
+        "Sangfor"
+      ],
+      "kev": [
+        {
+          "vendor": "Sangfor",
+          "product": ""
+        }
+      ],
+      "import_aliases": [
+        "Sangfor",
+        "NGAF",
+        "IAG",
+        "WANO"
+      ]
+    },
+    {
+      "id": "cisco-ios-xe",
+      "vendor": "Cisco",
+      "product": "Cisco IOS / IOS XE (Catalyst, ISR, ASR)",
+      "category": "Router / Switch",
+      "criticality": "critical",
+      "aliases": [
+        "Cisco Catalyst",
+        "IOS XE",
+        "Cisco IOS",
+        "ISR 4000",
+        "ISR4451",
+        "ASR 1000",
+        "ASR1000",
+        "ASR1002",
+        "Catalyst 8300",
+        "C8300"
+      ],
+      "vendor_aliases": [
+        "Cisco"
+      ],
+      "kev": [
+        {
+          "vendor": "Cisco",
+          "product": "IOS"
+        }
+      ],
+      "cpe": [
+        "cisco:ios_xe",
+        "cisco:ios"
+      ],
+      "import_aliases": [
+        "Cisco",
+        "WS-C2960",
+        "WS-C3850",
+        "C9300",
+        "C9404",
+        "C1000",
+        "C1300",
+        "ISR4451",
+        "ASR1002",
+        "C8300"
+      ]
+    },
+    {
+      "id": "cisco-ise",
+      "vendor": "Cisco",
+      "product": "Cisco Identity Services Engine (ISE)",
+      "category": "NAC",
+      "criticality": "critical",
+      "aliases": [
+        "Identity Services Engine",
+        "Cisco ISE"
+      ],
+      "vendor_aliases": [
+        "Cisco"
+      ],
+      "kev": [
+        {
+          "vendor": "Cisco",
+          "product": "Identity Services Engine"
+        }
+      ],
+      "cpe": [
+        "cisco:identity_services_engine"
+      ],
+      "import_aliases": [
+        "SNS-3615",
+        "SNS-3655",
+        "SNS-3695"
+      ]
+    },
+    {
+      "id": "cisco-wireless",
+      "vendor": "Cisco",
+      "product": "Cisco Wireless LAN Controller / Access Point",
+      "category": "WLAN",
+      "criticality": "high",
+      "aliases": [
+        "Wireless LAN Controller",
+        "AireOS",
+        "Aironet",
+        "Catalyst 9115"
+      ],
+      "vendor_aliases": [
+        "Cisco"
+      ],
+      "kev": [
+        {
+          "vendor": "Cisco",
+          "product": "Wireless LAN Controller"
+        }
+      ],
+      "cpe": [
+        "cisco:wireless_lan_controller_software"
+      ],
+      "import_aliases": [
+        "AIR-CT",
+        "AIR-AP",
+        "C9115",
+        "WLC"
+      ]
+    },
+    {
+      "id": "juniper-junos",
+      "vendor": "Juniper",
+      "product": "Juniper Junos OS (SRX / EX)",
+      "category": "Router / Switch",
+      "criticality": "critical",
+      "aliases": [
+        "Junos",
+        "Juniper SRX",
+        "SRX Series",
+        "EX Series",
+        "SRX300",
+        "EX2200"
+      ],
+      "vendor_aliases": [
+        "Juniper"
+      ],
+      "kev": [
+        {
+          "vendor": "Juniper",
+          "product": "Junos"
+        }
+      ],
+      "cpe": [
+        "juniper:junos"
+      ],
+      "import_aliases": [
+        "Juniper",
+        "SRX",
+        "EX2200"
+      ]
+    },
+    {
+      "id": "mikrotik-routeros",
+      "vendor": "MikroTik",
+      "product": "MikroTik RouterOS",
+      "category": "Router",
+      "criticality": "critical",
+      "aliases": [
+        "RouterOS",
+        "MikroTik",
+        "Microtik",
+        "RouterBOARD"
+      ],
+      "kev": [
+        {
+          "vendor": "MikroTik",
+          "product": "RouterOS"
+        }
+      ],
+      "cpe": [
+        "mikrotik:routeros"
+      ],
+      "import_aliases": [
+        "Mikrotik",
+        "RB750",
+        "RB2011",
+        "RB950",
+        "RB760"
+      ]
+    },
+    {
+      "id": "aruba",
+      "vendor": "HPE Aruba",
+      "product": "Aruba (ArubaOS / Instant On)",
+      "category": "WLAN / Router / Switch",
+      "criticality": "high",
+      "aliases": [
+        "ArubaOS",
+        "Aruba Instant On",
+        "Aruba EdgeConnect",
+        "HPE Aruba",
+        "Aruba Networks"
+      ],
+      "kev": [
+        {
+          "vendor": "Aruba",
+          "product": ""
+        }
+      ],
+      "cpe": [
+        "arubanetworks:arubaos",
+        "hpe:arubaos"
+      ],
+      "import_aliases": [
+        "Aruba"
+      ]
+    },
+    {
+      "id": "ruckus",
+      "vendor": "Ruckus",
+      "product": "Ruckus Wireless",
+      "category": "WLAN",
+      "criticality": "high",
+      "aliases": [
+        "Ruckus"
+      ],
+      "kev": [
+        {
+          "vendor": "Ruckus",
+          "product": ""
+        }
+      ]
+    },
+    {
+      "id": "ruijie",
+      "vendor": "Ruijie",
+      "product": "Ruijie / Reyee",
+      "category": "Switch / WLAN",
+      "criticality": "high",
+      "aliases": [
+        "Ruijie",
+        "Reyee"
+      ]
+    },
+    {
+      "id": "dell-networking",
+      "vendor": "Dell",
+      "product": "Dell Networking N-Series",
+      "category": "Switch",
+      "criticality": "normal",
+      "aliases": [
+        "Dell Networking",
+        "Dell EMC Networking",
+        "N1548"
+      ]
+    },
+    {
+      "id": "h3c",
+      "vendor": "H3C",
+      "product": "H3C Switch",
+      "category": "Switch",
+      "criticality": "normal",
+      "aliases": [
+        "H3C"
+      ]
+    },
+    {
+      "id": "hpe-officeconnect",
+      "vendor": "HPE",
+      "product": "HPE OfficeConnect Switch",
+      "category": "Switch",
+      "criticality": "normal",
+      "aliases": [
+        "OfficeConnect"
+      ],
+      "import_aliases": [
+        "HPE"
+      ]
+    },
+    {
+      "id": "lenovo-thinksystem-switch",
+      "vendor": "Lenovo",
+      "product": "Lenovo ThinkSystem RackSwitch",
+      "category": "Switch",
+      "criticality": "normal",
+      "aliases": [
+        "RackSwitch",
+        "NE1032T"
+      ]
+    },
+    {
+      "id": "versa-sdwan",
+      "vendor": "Versa Networks",
+      "product": "Versa SD-WAN (CSG / Director)",
+      "category": "SD-WAN",
+      "criticality": "critical",
+      "aliases": [
+        "Versa Networks",
+        "Versa Director",
+        "Versa SD-WAN",
+        "Versa CSG",
+        "Versa Concerto"
+      ],
+      "kev": [
+        {
+          "vendor": "Versa",
+          "product": ""
+        }
+      ],
+      "cpe": [
+        "versa-networks:versa_director"
+      ],
+      "import_aliases": [
+        "Versa"
+      ]
+    },
+    {
+      "id": "riverbed",
+      "vendor": "Riverbed",
+      "product": "Riverbed SteelHead",
+      "category": "WAN Optimizer",
+      "criticality": "high",
+      "aliases": [
+        "Riverbed",
+        "SteelHead"
+      ]
+    },
+    {
+      "id": "thales-payshield",
+      "vendor": "Thales",
+      "product": "Thales payShield HSM",
+      "category": "HSM",
+      "criticality": "critical",
+      "aliases": [
+        "payShield",
+        "Thales HSM"
+      ]
+    },
+    {
+      "id": "delinea-secret-server",
+      "vendor": "Delinea",
+      "product": "Delinea Secret Server (PAM)",
+      "category": "PAM",
+      "criticality": "critical",
+      "aliases": [
+        "Delinea",
+        "Secret Server",
+        "Thycotic"
+      ],
+      "kev": [
+        {
+          "vendor": "Delinea",
+          "product": ""
+        }
+      ],
+      "cpe": [
+        "delinea:secret_server"
+      ]
+    },
+    {
+      "id": "trendmicro-apex",
+      "vendor": "Trend Micro",
+      "product": "Trend Micro Apex One / Apex Central",
+      "category": "Endpoint Protection",
+      "criticality": "critical",
+      "aliases": [
+        "Apex One",
+        "Apex Central",
+        "OfficeScan"
+      ],
+      "vendor_aliases": [
+        "Trend Micro",
+        "TrendMicro"
+      ],
+      "kev": [
+        {
+          "vendor": "Trend Micro",
+          "product": "Apex One"
+        },
+        {
+          "vendor": "Trend Micro",
+          "product": "Apex Central"
+        }
+      ],
+      "cpe": [
+        "trendmicro:apex_one",
+        "trendmicro:apex_central"
+      ],
+      "import_aliases": [
+        "TM Apex One",
+        "TM Apex Central",
+        "TrendMicro"
+      ]
+    },
+    {
+      "id": "trendmicro-visionone",
+      "vendor": "Trend Micro",
+      "product": "Trend Micro Vision One",
+      "category": "XDR",
+      "criticality": "critical",
+      "aliases": [
+        "Vision One"
+      ],
+      "vendor_aliases": [
+        "Trend Micro",
+        "TrendMicro"
+      ]
+    },
+    {
+      "id": "vmware-vsphere",
+      "vendor": "VMware",
+      "product": "VMware ESXi / vCenter",
+      "category": "Virtualization",
+      "criticality": "critical",
+      "aliases": [
+        "VMware",
+        "ESXi",
+        "vCenter",
+        "vSphere"
+      ],
+      "kev": [
+        {
+          "vendor": "VMware",
+          "product": "ESXi"
+        },
+        {
+          "vendor": "VMware",
+          "product": "vCenter"
+        }
+      ],
+      "cpe": [
+        "vmware:esxi",
+        "vmware:vcenter_server"
+      ]
+    },
+    {
+      "id": "nutanix",
+      "vendor": "Nutanix",
+      "product": "Nutanix (AHV / Prism)",
+      "category": "Virtualization",
+      "criticality": "critical",
+      "aliases": [
+        "Nutanix"
+      ]
+    },
+    {
+      "id": "proxmox",
+      "vendor": "Proxmox",
+      "product": "Proxmox VE",
+      "category": "Virtualization",
+      "criticality": "critical",
+      "aliases": [
+        "Proxmox"
+      ],
+      "cpe": [
+        "proxmox:virtual_environment"
+      ]
+    },
+    {
+      "id": "veeam-backup",
+      "vendor": "Veeam",
+      "product": "Veeam Backup & Replication",
+      "category": "Backup",
+      "criticality": "critical",
+      "aliases": [
+        "Veeam"
+      ],
+      "kev": [
+        {
+          "vendor": "Veeam",
+          "product": "Backup"
+        }
+      ],
+      "cpe": [
+        "veeam:veeam_backup_\\&_replication",
+        "veeam:backup_\\&_replication"
+      ]
+    },
+    {
+      "id": "microsoft-active-directory",
+      "vendor": "Microsoft",
+      "product": "Active Directory",
+      "category": "Identity",
+      "criticality": "critical",
+      "aliases": [
+        "Active Directory",
+        "Domain Controller",
+        "Entra ID",
+        "Azure AD"
+      ]
+    },
+    {
+      "id": "manageengine-adselfservice",
+      "vendor": "Zoho ManageEngine",
+      "product": "ManageEngine ADSelfService Plus",
+      "category": "Identity / Self-Service",
+      "criticality": "critical",
+      "aliases": [
+        "ADSelfService Plus",
+        "ManageEngine"
+      ],
+      "kev": [
+        {
+          "vendor": "Zoho",
+          "product": "ADSelfService"
+        }
+      ],
+      "cpe": [
+        "zohocorp:manageengine_adselfservice_plus"
+      ]
+    },
+    {
+      "id": "oracle-ebs",
+      "vendor": "Oracle",
+      "product": "Oracle E-Business Suite",
+      "category": "ERP",
+      "criticality": "critical",
+      "aliases": [
+        "E-Business Suite",
+        "Oracle EBS"
+      ],
+      "kev": [
+        {
+          "vendor": "Oracle",
+          "product": "E-Business Suite"
+        }
+      ],
+      "cpe": [
+        "oracle:e-business_suite"
+      ],
+      "import_aliases": [
+        "CVE-2025-61882",
+        "Oracle E-Business",
+        "EBS"
+      ]
+    },
+    {
+      "id": "anydesk",
+      "vendor": "AnyDesk",
+      "product": "AnyDesk",
+      "category": "Remote Access",
+      "criticality": "critical",
+      "aliases": [
+        "AnyDesk"
+      ],
+      "cpe": [
+        "anydesk:anydesk"
+      ]
+    },
+    {
+      "id": "vnc",
+      "vendor": "RealVNC",
+      "product": "VNC",
+      "category": "Remote Access",
+      "criticality": "critical",
+      "aliases": [
+        "RealVNC",
+        "VNC Server",
+        "VNC Connect",
+        "TightVNC",
+        "UltraVNC"
+      ],
+      "cpe": [
+        "realvnc:vnc"
+      ]
+    },
+    {
+      "id": "openvpn",
+      "vendor": "OpenVPN",
+      "product": "OpenVPN",
+      "category": "VPN",
+      "criticality": "critical",
+      "aliases": [
+        "OpenVPN"
+      ],
+      "cpe": [
+        "openvpn:openvpn",
+        "openvpn:openvpn_connect"
+      ]
+    },
+    {
+      "id": "microsoft-rdp",
+      "vendor": "Microsoft",
+      "product": "Remote Desktop (RDP)",
+      "category": "Remote Access",
+      "criticality": "high",
+      "aliases": [
+        "Remote Desktop",
+        "RDP"
+      ],
+      "import_aliases": [
+        "Remote Desktop Connection"
+      ]
+    },
+    {
+      "id": "carbonio",
+      "vendor": "Zextras",
+      "product": "Carbonio",
+      "category": "Mail Server",
+      "criticality": "critical",
+      "aliases": [
+        "Carbonio",
+        "Zextras",
+        "Zimbra"
+      ],
+      "kev": [
+        {
+          "vendor": "Synacor",
+          "product": "Zimbra"
+        }
+      ]
+    },
+    {
+      "id": "nginx",
+      "vendor": "F5",
+      "product": "Nginx",
+      "category": "Web Server",
+      "criticality": "high",
+      "aliases": [
+        "Nginx"
+      ],
+      "cpe": [
+        "f5:nginx",
+        "nginx:nginx"
+      ]
+    },
+    {
+      "id": "modsecurity",
+      "vendor": "OWASP",
+      "product": "ModSecurity",
+      "category": "WAF",
+      "criticality": "high",
+      "aliases": [
+        "ModSecurity"
+      ],
+      "cpe": [
+        "owasp:modsecurity",
+        "trustwave:modsecurity"
+      ]
+    },
+    {
+      "id": "wordpress",
+      "vendor": "WordPress",
+      "product": "WordPress",
+      "category": "CMS",
+      "criticality": "high",
+      "aliases": [
+        "WordPress"
+      ],
+      "cpe": [
+        "wordpress:wordpress"
+      ]
+    },
+    {
+      "id": "nextcloud",
+      "vendor": "Nextcloud",
+      "product": "Nextcloud",
+      "category": "File Sharing",
+      "criticality": "high",
+      "aliases": [
+        "Nextcloud"
+      ],
+      "cpe": [
+        "nextcloud:nextcloud_server"
+      ],
+      "import_aliases": [
+        "Nexcloud"
+      ]
+    },
+    {
+      "id": "powerdns",
+      "vendor": "PowerDNS",
+      "product": "PowerDNS",
+      "category": "DNS",
+      "criticality": "high",
+      "aliases": [
+        "PowerDNS"
+      ],
+      "cpe": [
+        "powerdns:authoritative_server",
+        "powerdns:recursor"
+      ],
+      "import_aliases": [
+        "PDNS"
+      ]
+    },
+    {
+      "id": "gitlab",
+      "vendor": "GitLab",
+      "product": "GitLab",
+      "category": "DevOps",
+      "criticality": "high",
+      "aliases": [
+        "GitLab"
+      ],
+      "kev": [
+        {
+          "vendor": "GitLab",
+          "product": ""
+        }
+      ],
+      "cpe": [
+        "gitlab:gitlab"
+      ]
+    },
+    {
+      "id": "automic",
+      "vendor": "Broadcom",
+      "product": "Automic Automation (job scheduler)",
+      "category": "Job Scheduler",
+      "criticality": "high",
+      "aliases": [
+        "Automic"
+      ]
+    },
+    {
+      "id": "mssql",
+      "vendor": "Microsoft",
+      "product": "Microsoft SQL Server",
+      "category": "Database",
+      "criticality": "high",
+      "aliases": [
+        "SQL Server",
+        "MSSQL"
+      ],
+      "cpe": [
+        "microsoft:sql_server"
+      ]
+    },
+    {
+      "id": "mongodb",
+      "vendor": "MongoDB",
+      "product": "MongoDB",
+      "category": "Database",
+      "criticality": "high",
+      "aliases": [
+        "MongoDB"
+      ],
+      "cpe": [
+        "mongodb:mongodb"
+      ]
+    },
+    {
+      "id": "samba",
+      "vendor": "Samba",
+      "product": "Samba",
+      "category": "File Server",
+      "criticality": "high",
+      "strict_aliases": [
+        "Samba"
+      ],
+      "cpe": [
+        "samba:samba"
+      ]
+    },
+    {
+      "id": "php",
+      "vendor": "PHP Group",
+      "product": "PHP",
+      "category": "Runtime",
+      "criticality": "high",
+      "aliases": [
+        "PHP"
+      ],
+      "cpe": [
+        "php:php"
+      ]
+    },
+    {
+      "id": "react-nextjs",
+      "vendor": "Meta / Vercel",
+      "product": "React / Next.js",
+      "category": "Web Framework",
+      "criticality": "high",
+      "aliases": [
+        "React Server Components",
+        "Next.js",
+        "NextJS",
+        "React Native"
+      ],
+      "strict_aliases": [
+        "React"
+      ],
+      "kev": [
+        {
+          "vendor": "Meta",
+          "product": "React"
+        },
+        {
+          "vendor": "Vercel",
+          "product": "Next.js"
+        }
+      ],
+      "cpe": [
+        "vercel:next.js",
+        "facebook:react"
+      ]
+    },
+    {
+      "id": "docker",
+      "vendor": "Docker",
+      "product": "Docker",
+      "category": "Container",
+      "criticality": "high",
+      "aliases": [
+        "Docker"
+      ],
+      "cpe": [
+        "docker:docker_desktop"
+      ]
+    },
+    {
+      "id": "java",
+      "vendor": "Oracle",
+      "product": "Java (JDK / JRE)",
+      "category": "Runtime",
+      "criticality": "normal",
+      "aliases": [
+        "Java SE",
+        "Oracle Java",
+        "OpenJDK",
+        "JDK",
+        "JRE"
+      ],
+      "import_aliases": [
+        "Java"
+      ]
+    },
+    {
+      "id": "google-chrome",
+      "vendor": "Google",
+      "product": "Google Chrome",
+      "category": "Browser",
+      "criticality": "high",
+      "aliases": [
+        "Google Chrome",
+        "Chrome",
+        "Chromium"
+      ],
+      "kev": [
+        {
+          "vendor": "Google",
+          "product": "Chromium"
+        },
+        {
+          "vendor": "Google",
+          "product": "Chrome"
+        }
+      ],
+      "cpe": [
+        "google:chrome"
+      ]
+    },
+    {
+      "id": "microsoft-edge",
+      "vendor": "Microsoft",
+      "product": "Microsoft Edge",
+      "category": "Browser",
+      "criticality": "high",
+      "aliases": [
+        "Microsoft Edge"
+      ],
+      "kev": [
+        {
+          "vendor": "Microsoft",
+          "product": "Edge"
+        }
+      ],
+      "cpe": [
+        "microsoft:edge_chromium",
+        "microsoft:edge"
+      ]
+    },
+    {
+      "id": "mozilla-firefox",
+      "vendor": "Mozilla",
+      "product": "Mozilla Firefox",
+      "category": "Browser",
+      "criticality": "high",
+      "aliases": [
+        "Firefox"
+      ],
+      "kev": [
+        {
+          "vendor": "Mozilla",
+          "product": "Firefox"
+        }
+      ],
+      "cpe": [
+        "mozilla:firefox"
+      ]
+    },
+    {
+      "id": "other-browsers",
+      "vendor": "Various",
+      "product": "Opera / Arc / Brave",
+      "category": "Browser",
+      "criticality": "normal",
+      "aliases": [
+        "Opera browser",
+        "Arc browser",
+        "Brave browser"
+      ]
+    },
+    {
+      "id": "microsoft-office",
+      "vendor": "Microsoft",
+      "product": "Microsoft 365 / Office / Teams",
+      "category": "Productivity",
+      "criticality": "normal",
+      "aliases": [
+        "Microsoft 365",
+        "Office 365",
+        "Microsoft Office",
+        "Microsoft Teams",
+        "Microsoft Project",
+        "Microsoft Excel",
+        "Microsoft Outlook",
+        "Microsoft Visio"
+      ],
+      "kev": [
+        {
+          "vendor": "Microsoft",
+          "product": "Office"
+        }
+      ],
+      "import_aliases": [
+        "Excel",
+        "Microsoft Office 365",
+        "Outlook",
+        "Visio"
+      ]
+    },
+    {
+      "id": "microsoft-dynamics-ax",
+      "vendor": "Microsoft",
+      "product": "Microsoft Dynamics AX",
+      "category": "ERP / CRM",
+      "criticality": "high",
+      "aliases": [
+        "Dynamics AX"
+      ]
+    },
+    {
+      "id": "salesforce",
+      "vendor": "Salesforce",
+      "product": "Salesforce",
+      "category": "CRM (SaaS)",
+      "criticality": "normal",
+      "aliases": [
+        "Salesforce"
+      ]
+    },
+    {
+      "id": "tableau",
+      "vendor": "Salesforce",
+      "product": "Tableau",
+      "category": "Analytics",
+      "criticality": "normal",
+      "aliases": [
+        "Tableau"
+      ]
+    },
+    {
+      "id": "adobe-acrobat",
+      "vendor": "Adobe",
+      "product": "Adobe Acrobat / Reader",
+      "category": "PDF",
+      "criticality": "normal",
+      "aliases": [
+        "Acrobat",
+        "Adobe Reader"
+      ],
+      "kev": [
+        {
+          "vendor": "Adobe",
+          "product": "Acrobat"
+        }
+      ],
+      "cpe": [
+        "adobe:acrobat_reader_dc",
+        "adobe:acrobat_dc",
+        "adobe:acrobat_reader",
+        "adobe:acrobat"
+      ],
+      "import_aliases": [
+        "Acobat Pro",
+        "Acrobat Pro",
+        "Adobe Reader",
+        "PDF Reader"
+      ]
+    },
+    {
+      "id": "adobe-creative",
+      "vendor": "Adobe",
+      "product": "Adobe Creative Cloud / Photoshop / Premiere Pro",
+      "category": "Design",
+      "criticality": "normal",
+      "aliases": [
+        "Creative Cloud",
+        "Photoshop",
+        "Premiere Pro"
+      ]
+    },
+    {
+      "id": "pdf-readers",
+      "vendor": "Various",
+      "product": "Foxit / Nitro PDF",
+      "category": "PDF",
+      "criticality": "normal",
+      "aliases": [
+        "Foxit",
+        "Nitro PDF"
+      ]
+    },
+    {
+      "id": "design-tools",
+      "vendor": "Various",
+      "product": "AutoCAD / SketchUp / Enscape / Canva",
+      "category": "Design",
+      "criticality": "normal",
+      "aliases": [
+        "AutoCAD",
+        "SketchUp",
+        "Enscape",
+        "Canva"
+      ]
+    },
+    {
+      "id": "archivers",
+      "vendor": "Various",
+      "product": "7-Zip / WinRAR / WinZip / IZArc",
+      "category": "Archiver",
+      "criticality": "high",
+      "aliases": [
+        "7-Zip",
+        "7Zip",
+        "WinRAR",
+        "WinZip",
+        "IZArc"
+      ],
+      "kev": [
+        {
+          "vendor": "7-Zip",
+          "product": "7-Zip"
+        },
+        {
+          "vendor": "RARLAB",
+          "product": "WinRAR"
+        }
+      ],
+      "cpe": [
+        "7-zip:7-zip",
+        "rarlab:winrar"
+      ]
+    },
+    {
+      "id": "messaging",
+      "vendor": "Various",
+      "product": "WhatsApp / Telegram / Lark / Zoom / Discord / Foxmail",
+      "category": "Messaging",
+      "criticality": "normal",
+      "aliases": [
+        "WhatsApp",
+        "Telegram",
+        "Discord",
+        "Foxmail",
+        "LocalSend",
+        "Zoom Workplace",
+        "Lark Suite"
+      ],
+      "strict_aliases": [
+        "Zoom",
+        "Lark"
+      ],
+      "import_aliases": [
+        "Whatsapp Desktop",
+        "Lark"
+      ]
+    },
+    {
+      "id": "file-transfer",
+      "vendor": "Various",
+      "product": "FileZilla / WinSCP / PuTTY",
+      "category": "File Transfer / SSH",
+      "criticality": "normal",
+      "aliases": [
+        "FileZilla",
+        "WinSCP",
+        "PuTTY"
+      ]
+    },
+    {
+      "id": "dev-tools",
+      "vendor": "Various",
+      "product": "IDE & developer tools",
+      "category": "Developer Tools",
+      "criticality": "normal",
+      "aliases": [
+        "Visual Studio Code",
+        "VS Code",
+        "Visual Studio",
+        "Android Studio",
+        "IntelliJ",
+        "Xcode",
+        "Postman",
+        "Insomnia",
+        "Katalon",
+        "JADX",
+        "Burp Suite",
+        "iTerm",
+        "TortoiseSVN",
+        "Notepad++",
+        "Google Antigravity",
+        "PowerShell",
+        "Eclipse IDE"
+      ],
+      "strict_aliases": [
+        "Eclipse"
+      ],
+      "import_aliases": [
+        "SVN Tortoise",
+        "Tortoise SVN",
+        "Bruno"
+      ]
+    },
+    {
+      "id": "db-tools",
+      "vendor": "Various",
+      "product": "Database clients",
+      "category": "Developer Tools",
+      "criticality": "normal",
+      "aliases": [
+        "Toad for Oracle",
+        "pgAdmin",
+        "DBeaver",
+        "PL/SQL Developer",
+        "NoSQL Workbench",
+        "SQL Server Management Studio",
+        "IBM Access Client Solutions"
+      ],
+      "import_aliases": [
+        "Toad",
+        "PLSql",
+        "PL SQL",
+        "Access Client Solutions",
+        "pgAdmin4",
+        "SSMS"
+      ]
+    },
+    {
+      "id": "office-suites",
+      "vendor": "Various",
+      "product": "LibreOffice / WPS Office",
+      "category": "Productivity",
+      "criticality": "normal",
+      "aliases": [
+        "LibreOffice",
+        "WPS Office"
+      ]
+    },
+    {
+      "id": "git",
+      "vendor": "Git",
+      "product": "Git",
+      "category": "Developer Tools",
+      "criticality": "normal",
+      "aliases": [
+        "Git for Windows",
+        "git-scm"
+      ],
+      "strict_aliases": [
+        "Git"
+      ],
+      "cpe": [
+        "git-scm:git"
+      ]
+    },
+    {
+      "id": "bitwarden",
+      "vendor": "Bitwarden",
+      "product": "Bitwarden",
+      "category": "Password Manager",
+      "criticality": "high",
+      "aliases": [
+        "Bitwarden"
+      ]
+    }
+  ]
+}

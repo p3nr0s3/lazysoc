@@ -10,8 +10,11 @@ try:
     import defusedxml.ElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import List, Dict, Any, Optional
 from core.watchlist import match_text, priority_score, extract_cve_ids
+from core.database import save_feed_articles, get_feed_article
 
 FEED_SOURCES = {
     "thehackernews": {
@@ -72,6 +75,23 @@ def _classify_category(title: str, summary: str) -> str:
     return "Cyber News"
 
 
+def _published_at(pub_date: str) -> Optional[str]:
+    """Normalizes RSS pubDate (RFC 822) or dc:date (ISO 8601) to UTC 'YYYY-MM-DD HH:MM:SS'."""
+    if not pub_date:
+        return None
+    dt = None
+    try:
+        dt = parsedate_to_datetime(pub_date)
+    except (TypeError, ValueError, IndexError):
+        try:
+            dt = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
 def fetch_single_feed(source_key: str, meta: Dict[str, str], timeout: int = 8) -> List[Dict[str, Any]]:
     """Fetches and parses a single RSS feed."""
     headers = {
@@ -105,6 +125,7 @@ def fetch_single_feed(source_key: str, meta: Dict[str, str], timeout: int = 8) -
                 "source_key": source_key,
                 "badge_color": meta["badge_color"],
                 "pub_date": pub_date,
+                "published_at": _published_at(pub_date),
                 "summary": summary,
                 "content": content,
                 "category": category,
@@ -128,16 +149,26 @@ def _get_all_articles() -> List[Dict[str, Any]]:
     for sk, meta in FEED_SOURCES.items():
         all_items.extend(fetch_single_feed(sk, meta))
 
-    # Sort roughly by date or keep balanced interleaved order
     if all_items:
+        all_items.sort(key=lambda a: a.get("published_at") or "", reverse=True)
         _FEED_CACHE["timestamp"] = now
         _FEED_CACHE["items"] = all_items
+        try:
+            save_feed_articles(all_items)  # history for period digests
+        except Exception:
+            pass
     return all_items or _FEED_CACHE["items"]
+
+
+def refresh_feed_store() -> int:
+    """Fetches the live feeds (if the cache is stale) so the article store is current."""
+    return len(_get_all_articles())
 
 
 def get_article_by_link(link: str) -> Optional[Dict[str, Any]]:
     """Finds a feed article (with its full text) by link, so callers can't submit arbitrary text."""
-    return next((a for a in _get_all_articles() if a.get("link") == link), None)
+    live = next((a for a in _get_all_articles() if a.get("link") == link), None)
+    return live or get_feed_article(link)
 
 
 def _annotate(article: Dict[str, Any], owner: Optional[str]) -> Dict[str, Any]:
