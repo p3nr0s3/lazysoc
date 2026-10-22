@@ -179,7 +179,12 @@ LazySOC is optimized for zero-configuration cloud deployment:
    - `VIRUSTOTAL_API_KEYS`: your API key(s)
    - `ABUSEIPDB_API_KEYS`: your API key(s)
    - `ALLOW_KEY_MANAGEMENT`: `false` (locks sensitive key endpoints)
+   - `LAZYSOC_AUTH_USER` and `LAZYSOC_AUTH_PASSWORD`: **set both** to require a login (HTTP Basic Auth) for every page and API call. Without them a public deployment is open to anyone who knows the URL.
    - `PORT`: `8000` (or leave default assigned by host)
+4. Health checks use `/healthz`, which stays reachable without a login and returns only `{"status": "ok"}`.
+
+### 🔐 Login
+Set `LAZYSOC_AUTH_USER` plus `LAZYSOC_AUTH_PASSWORD` (or `LAZYSOC_AUTH_PASSWORD_SHA256`, the SHA-256 hex digest of the password) in `.env` or the hosting dashboard, then restart. The browser asks for the username and password once and sends them with every request, so always serve LazySOC over HTTPS when the login is enabled. Leaving both empty disables the login (fine for local use on your own machine).
 
 ---
 
