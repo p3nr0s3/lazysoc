@@ -21,6 +21,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.9",
     "defusedxml>=0.7.1",
+    "anthropic>=1.17.0,<2",
 ]
 
 [project.optional-dependencies]

@@ -11,6 +11,7 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 from typing import List, Dict, Any, Optional
+from core.watchlist import match_text, priority_score, extract_cve_ids
 
 FEED_SOURCES = {
     "thehackernews": {
@@ -36,20 +37,23 @@ FEED_SOURCES = {
 }
 
 CACHE_TTL_SECONDS = 300  # 5 minutes cache
+ITEMS_PER_FEED = 25
+CONTENT_MAX_CHARS = 8000  # full text kept server-side for watchlist matching and AI summaries
+RSS_CONTENT_NS = "{http://purl.org/rss/1.0/modules/content/}encoded"
 _FEED_CACHE: Dict[str, Any] = {
     "timestamp": 0.0,
     "items": [],
 }
 
 
-def _strip_html(text: str) -> str:
+def _strip_html(text: str, max_len: int = 280) -> str:
     """Removes HTML tags and cleans up whitespace."""
     if not text:
         return ""
     clean = re.sub(r"<[^>]+>", " ", text)
     clean = re.sub(r"&[a-z]+;", " ", clean)
     clean = re.sub(r"\s+", " ", clean).strip()
-    return clean[:280] + ("..." if len(clean) > 280 else "")
+    return clean[:max_len] + ("..." if len(clean) > max_len else "")
 
 
 def _classify_category(title: str, summary: str) -> str:
@@ -81,12 +85,13 @@ def fetch_single_feed(source_key: str, meta: Dict[str, str], timeout: int = 8) -
 
         root = ET.fromstring(resp.content)
         items = root.findall(".//item")
-        for item in items[:15]:
+        for item in items[:ITEMS_PER_FEED]:
             title = (item.findtext("title") or "").strip()
             link = (item.findtext("link") or "").strip()
             pub_date = (item.findtext("pubDate") or item.findtext("{http://purl.org/dc/elements/1.1/}date") or "").strip()
             raw_desc = item.findtext("description") or ""
             summary = _strip_html(raw_desc)
+            content = _strip_html(item.findtext(RSS_CONTENT_NS) or raw_desc, max_len=CONTENT_MAX_CHARS)
 
             if not title:
                 continue
@@ -101,6 +106,7 @@ def fetch_single_feed(source_key: str, meta: Dict[str, str], timeout: int = 8) -
                 "badge_color": meta["badge_color"],
                 "pub_date": pub_date,
                 "summary": summary,
+                "content": content,
                 "category": category,
             })
     except Exception as e:
@@ -110,23 +116,44 @@ def fetch_single_feed(source_key: str, meta: Dict[str, str], timeout: int = 8) -
     return articles
 
 
-def get_cyber_news(source: str = "all", limit: int = 30) -> Dict[str, Any]:
-    """Retrieves aggregated and cached cyber news feeds."""
+def _get_all_articles() -> List[Dict[str, Any]]:
     global _FEED_CACHE
     now = time.time()
 
     # Return cached results if still fresh
     if now - _FEED_CACHE["timestamp"] < CACHE_TTL_SECONDS and _FEED_CACHE["items"]:
-        all_items = _FEED_CACHE["items"]
-    else:
-        all_items = []
-        for sk, meta in FEED_SOURCES.items():
-            all_items.extend(fetch_single_feed(sk, meta))
+        return _FEED_CACHE["items"]
 
-        # Sort roughly by date or keep balanced interleaved order
-        if all_items:
-            _FEED_CACHE["timestamp"] = now
-            _FEED_CACHE["items"] = all_items
+    all_items = []
+    for sk, meta in FEED_SOURCES.items():
+        all_items.extend(fetch_single_feed(sk, meta))
+
+    # Sort roughly by date or keep balanced interleaved order
+    if all_items:
+        _FEED_CACHE["timestamp"] = now
+        _FEED_CACHE["items"] = all_items
+    return all_items or _FEED_CACHE["items"]
+
+
+def get_article_by_link(link: str) -> Optional[Dict[str, Any]]:
+    """Finds a feed article (with its full text) by link, so callers can't submit arbitrary text."""
+    return next((a for a in _get_all_articles() if a.get("link") == link), None)
+
+
+def _annotate(article: Dict[str, Any], owner: Optional[str]) -> Dict[str, Any]:
+    text = f"{article['title']}\n{article.get('content') or article['summary']}"
+    matches = match_text(text, owner=owner)
+    public = {k: v for k, v in article.items() if k != "content"}
+    public["watchlist_matches"] = matches
+    public["watchlist_priority"] = priority_score(matches)
+    public["cves"] = extract_cve_ids(text)
+    return public
+
+
+def get_cyber_news(source: str = "all", limit: int = 30, owner: Optional[str] = None, watchlist_only: bool = False) -> Dict[str, Any]:
+    """Retrieves aggregated cyber news feeds, tagged with matching watchlist products."""
+    now = time.time()
+    all_items = _get_all_articles()
 
     # Filter by source if requested
     source = source.lower().strip()
@@ -135,9 +162,16 @@ def get_cyber_news(source: str = "all", limit: int = 30) -> Dict[str, Any]:
     else:
         filtered = all_items
 
+    owner = (owner or "").strip() or None
+    annotated = [_annotate(a, owner) for a in filtered]
+    if watchlist_only or owner:
+        annotated = [a for a in annotated if a["watchlist_matches"]]
+        annotated.sort(key=lambda a: a["watchlist_priority"], reverse=True)
+
     return {
-        "total": len(filtered[:limit]),
+        "total": len(annotated[:limit]),
         "sources": [s["name"] for s in FEED_SOURCES.values()],
         "cached": (now - _FEED_CACHE["timestamp"] < CACHE_TTL_SECONDS),
-        "items": filtered[:limit],
+        "watchlist_matched": sum(1 for a in annotated if a["watchlist_matches"]),
+        "items": annotated[:limit],
     }

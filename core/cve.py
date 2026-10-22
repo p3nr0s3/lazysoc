@@ -65,6 +65,41 @@ FALLBACK_KEV_ITEMS: List[Dict[str, Any]] = [
 ]
 
 _KEV_CACHE: Dict[str, Any] = {"timestamp": 0.0, "items": []}
+_KEV_RAW_CACHE: Dict[str, Any] = {"timestamp": 0.0, "items": []}
+KEV_RAW_CACHE_TTL = 3600  # full catalog changes a few times per week
+
+
+def fetch_kev_catalog() -> List[Dict[str, Any]]:
+    """Returns the full raw CISA KEV catalog (newest first), cached for an hour."""
+    now = time.time()
+    if now - _KEV_RAW_CACHE["timestamp"] < KEV_RAW_CACHE_TTL and _KEV_RAW_CACHE["items"]:
+        return _KEV_RAW_CACHE["items"]
+
+    try:
+        resp = requests.get(CISA_KEV_URL, headers={"User-Agent": "LazySOC-CyberSec/3.0"}, timeout=12)
+        if resp.status_code == 200:
+            raw_vulns = resp.json().get("vulnerabilities", [])
+            _KEV_RAW_CACHE["items"] = sorted(raw_vulns, key=lambda x: x.get("dateAdded", ""), reverse=True)
+            _KEV_RAW_CACHE["timestamp"] = now
+    except Exception:
+        pass
+    return _KEV_RAW_CACHE["items"]
+
+
+def fetch_nvd_cve(cve_id: str) -> Optional[Dict[str, Any]]:
+    """Fetches one raw NVD CVE object (with CPE configurations) by ID. Returns None on failure."""
+    headers = {"User-Agent": "LazySOC-CyberSec/3.0"}
+    if NVD_API_KEY:
+        headers["apiKey"] = NVD_API_KEY
+    try:
+        resp = requests.get(NVD_API_URL, headers=headers, params={"cveId": cve_id.upper()}, timeout=10)
+        if resp.status_code == 200:
+            vulns = resp.json().get("vulnerabilities", [])
+            if vulns:
+                return vulns[0].get("cve")
+    except Exception:
+        pass
+    return None
 
 
 def fetch_cisa_kev_recent(limit: int = 50) -> List[Dict[str, Any]]:
@@ -76,11 +111,8 @@ def fetch_cisa_kev_recent(limit: int = 50) -> List[Dict[str, Any]]:
         items = _KEV_CACHE["items"]
     else:
         try:
-            resp = requests.get(CISA_KEV_URL, headers={"User-Agent": "LazySOC-CyberSec/3.0"}, timeout=8)
-            if resp.status_code == 200:
-                raw_vulns = resp.json().get("vulnerabilities", [])
-                # Sort newest by dateAdded descending
-                sorted_vulns = sorted(raw_vulns, key=lambda x: x.get("dateAdded", ""), reverse=True)
+            sorted_vulns = fetch_kev_catalog()
+            if sorted_vulns:
                 formatted = []
                 for v in sorted_vulns[:500]:
                     cve_id = v.get("cveID", "")

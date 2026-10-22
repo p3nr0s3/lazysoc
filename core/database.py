@@ -54,6 +54,28 @@ def init_db():
             )
             """
         )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS nvd_cve_cache (
+                cve_id TEXT PRIMARY KEY,
+                cve_json TEXT NOT NULL,
+                fetched_at TIMESTAMP NOT NULL
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ai_summaries (
+                article_key TEXT PRIMARY KEY,
+                link TEXT,
+                model TEXT NOT NULL,
+                summary_json TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
         conn.commit()
 
 
@@ -202,6 +224,69 @@ def log_scan(total: int, mal: int, susp: int, clean: int, unk: int):
             VALUES (?, ?, ?, ?, ?)
             """,
             (total, mal, susp, clean, unk),
+        )
+        conn.commit()
+
+
+def get_cached_nvd_cve(cve_id: str, max_age_hours: int = 72) -> Optional[Dict[str, Any]]:
+    """Returns the raw NVD CVE object if it was fetched within max_age_hours."""
+    cutoff = (utc_now() - timedelta(hours=max_age_hours)).strftime("%Y-%m-%d %H:%M:%S")
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT cve_json FROM nvd_cve_cache WHERE cve_id = ? AND fetched_at > ?",
+            (cve_id.upper(), cutoff),
+        )
+        row = cursor.fetchone()
+        return json.loads(row["cve_json"]) if row else None
+
+
+def save_cached_nvd_cve(cve_id: str, cve_obj: Dict[str, Any]):
+    """Stores a raw NVD CVE object (including its CPE configurations)."""
+    now_str = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO nvd_cve_cache (cve_id, cve_json, fetched_at) VALUES (?, ?, ?)
+            ON CONFLICT(cve_id) DO UPDATE SET cve_json = excluded.cve_json, fetched_at = excluded.fetched_at
+            """,
+            (cve_id.upper(), json.dumps(cve_obj), now_str),
+        )
+        conn.commit()
+
+
+def get_ai_summary(article_key: str) -> Optional[Dict[str, Any]]:
+    """Returns a stored AI summary for an article, if any."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT model, summary_json, created_at FROM ai_summaries WHERE article_key = ?",
+            (article_key,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return {
+            "model": row["model"],
+            "summary": json.loads(row["summary_json"]),
+            "created_at": row["created_at"],
+        }
+
+
+def save_ai_summary(article_key: str, link: str, model: str, summary: Dict[str, Any]):
+    """Stores an AI summary so each article is only summarized once."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO ai_summaries (article_key, link, model, summary_json) VALUES (?, ?, ?, ?)
+            ON CONFLICT(article_key) DO UPDATE SET
+                model = excluded.model,
+                summary_json = excluded.summary_json,
+                created_at = CURRENT_TIMESTAMP
+            """,
+            (article_key, link, model, json.dumps(summary)),
         )
         conn.commit()
 

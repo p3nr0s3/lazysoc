@@ -38,8 +38,10 @@ from core.database import (
     get_scan_history,
 )
 from core.exporter import export_to_csv, export_to_json
-from core.feed import get_cyber_news
+from core.feed import get_cyber_news, get_article_by_link
 from core.cve import query_cve
+from core.watchlist import get_watchlist_summary, get_kev_exposure, check_cve_impact
+from core.ai_summary import summarize_article
 from core.playbooks import get_all_playbooks, get_playbook, generate_playbook_report
 from core.url_tracer import trace_url_redirects
 from core.deobfuscator import deobfuscate_payload
@@ -192,6 +194,11 @@ class ThreatFoxRequest(BaseModel):
 
 class MalwareBazaarRequest(BaseModel):
     hash: str
+
+
+class FeedSummaryRequest(BaseModel):
+    link: str
+    force: bool = False
 
 
 
@@ -410,9 +417,40 @@ def export_results(req: ExportRequest):
 
 
 @app.get("/api/feed")
-def get_cyber_feed_endpoint(source: str = "all", limit: int = 40):
-    """Fetches real-time cyber security news & threat advisories."""
-    return get_cyber_news(source=source, limit=limit)
+def get_cyber_feed_endpoint(source: str = "all", limit: int = 40, owner: Optional[str] = None, watchlist_only: bool = False):
+    """Fetches real-time cyber security news & threat advisories, tagged with watchlist matches."""
+    return get_cyber_news(source=source, limit=max(1, min(limit, 200)), owner=owner, watchlist_only=watchlist_only)
+
+
+@app.post("/api/feed/summarize")
+def summarize_feed_article_endpoint(req: FeedSummaryRequest):
+    """Summarizes one feed article with Claude. Only the public article text is sent to the API."""
+    article = get_article_by_link(req.link)
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found in the current feed.")
+    return summarize_article(article, force=req.force)
+
+
+@app.get("/api/watchlist")
+def get_watchlist_endpoint():
+    """Returns the critical tools watchlist (owners, products, deployments)."""
+    return get_watchlist_summary()
+
+
+@app.get("/api/watchlist/exposure")
+def get_watchlist_exposure_endpoint(owner: Optional[str] = None, since_days: int = 365):
+    """Lists CISA KEV entries that hit watchlist products, with per-deployment version status."""
+    return get_kev_exposure(owner=owner, since_days=max(0, min(since_days, 3650)))
+
+
+@app.get("/api/watchlist/cve/{cve_id}")
+def check_watchlist_cve_endpoint(cve_id: str, owner: Optional[str] = None, assets: Optional[str] = None):
+    """Checks one CVE's NVD version ranges against watchlist deployments."""
+    extra = [a.strip() for a in (assets or "").split(",") if a.strip()]
+    result = check_cve_impact(cve_id, owner=owner, extra_asset_ids=extra)
+    if result.get("error_type") == "INVALID_ID":
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 @app.get("/api/cve")

@@ -40,6 +40,14 @@ SHODAN_INTERNETDB_URL = "https://internetdb.shodan.io"
 NVD_API_KEY = os.getenv("NVD_API_KEY", "")
 GREYNOISE_API_KEY = os.getenv("GREYNOISE_API_KEY", "")
 
+# Critical tools watchlist (internal + customer inventory). Kept under data/ so it is never committed.
+WATCHLIST_FILE = Path(os.getenv("WATCHLIST_FILE", str(DATA_DIR / "watchlist.json")))
+
+# AI article summaries (Claude). Credentials are resolved by the Anthropic SDK (ANTHROPIC_API_KEY, etc.).
+AI_SUMMARY_ENABLED = os.getenv("AI_SUMMARY_ENABLED", "true").lower() in ("true", "1", "yes")
+AI_SUMMARY_MODEL = os.getenv("AI_SUMMARY_MODEL", "claude-opus-5-5")
+AI_SUMMARY_EFFORT = os.getenv("AI_SUMMARY_EFFORT", "low")
+
 # Free tier limits (reference)
 # VirusTotal: 4 requests / minute, 500 requests / day
 # AbuseIPDB: 1000 requests / day

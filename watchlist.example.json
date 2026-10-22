@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "source": "Example only - copy to data/watchlist.json (git-ignored) and replace with your own inventory",
+  "assets": [
+    {
+      "id": "fortinet-fortios",
+      "vendor": "Fortinet",
+      "product": "FortiOS / FortiGate",
+      "category": "Firewall",
+      "criticality": "critical",
+      "aliases": ["FortiOS", "FortiGate"],
+      "vendor_aliases": ["Fortinet"],
+      "kev": [{"vendor": "Fortinet", "product": "FortiOS"}],
+      "cpe": ["fortinet:fortios"],
+      "deployments": [
+        {"owner": "Internal", "version": "7.4.8", "note": "edge-fw-01"},
+        {"owner": "Customer A", "note": "FortiGate 100F"}
+      ]
+    },
+    {
+      "id": "react-nextjs",
+      "vendor": "Meta / Vercel",
+      "product": "React / Next.js",
+      "category": "Web Framework",
+      "criticality": "high",
+      "aliases": ["Next.js", "React Server Components"],
+      "strict_aliases": ["React"],
+      "kev": [{"vendor": "Meta", "product": "React"}],
+      "cpe": ["vercel:next.js", "facebook:react"],
+      "deployments": [{"owner": "Customer B", "version": "15.1.0"}]
+    }
+  ]
+}

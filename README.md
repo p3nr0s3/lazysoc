@@ -106,6 +106,12 @@
 ### 🗺️ 16. MITRE ATT&CK® Navigator Layer Export
 - One-click export of incident threat coverage into official **MITRE ATT&CK Navigator v4.5** layer JSON files (`lazysoc_mitre_layer.json`) ready for direct import into the online ATT&CK Navigator.
 
+### 🧭 17. Critical Tools Watchlist & AI Feed Insight
+- **Watchlist correlation**: Cyber Feeds articles are tagged with the internal and customer products they mention (product aliases, or vendor-only as a weaker signal), ranked by criticality, and filterable per owner or "My Stack only".
+- **KEV exposure with version checks**: CISA KEV entries that hit watchlist products are checked against each deployment's recorded version using the NVD CPE version ranges (`TERDAMPAK` / `VERSI AMAN` / `PERLU CEK`). CVE IDs inside articles can be checked the same way.
+- **AI summary (Claude)**: one click summarizes an article into a structured brief (urgency, exploitation status, affected/fixed versions, recommended actions). Only the public article text is sent to the Claude API; the watchlist never leaves the server. Summaries are cached in SQLite.
+- **Setup**: copy `watchlist.example.json` to `data/watchlist.json` (git-ignored) and fill in your inventory; set `ANTHROPIC_API_KEY` to enable summaries. Run this only on internal instances: the watchlist describes your customers' attack surface.
+
 ---
 
 

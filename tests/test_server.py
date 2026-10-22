@@ -26,6 +26,18 @@ def test_parse_endpoint():
     assert "md5" in types
 
 
+def test_feed_summarize_rejects_unknown_article(monkeypatch):
+    import server
+    monkeypatch.setattr(server, "get_article_by_link", lambda link: None)
+    res = client.post("/api/feed/summarize", json={"link": "https://example.test/not-in-feed"})
+    assert res.status_code == 404
+
+
+def test_watchlist_cve_rejects_bad_id():
+    res = client.get("/api/watchlist/cve/not-a-cve")
+    assert res.status_code == 400
+
+
 def test_index_html_served():
     res = client.get("/")
     assert res.status_code == 200
