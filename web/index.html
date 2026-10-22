@@ -2387,6 +2387,13 @@
         .replace(/'/g, '&#39;');
     }
 
+    // Encodes a value as a JS string literal for inline event handlers, e.g.
+    // onclick="fn(${jsArg(x)})". The browser decodes HTML entities before the
+    // handler runs, so escapeHtml alone cannot keep quotes inside the string.
+    function jsArg(val) {
+      return escapeHtml(JSON.stringify(val === null || val === undefined ? '' : String(val)));
+    }
+
     function defangIndicator(val) {
       if (!val) return '';
       let res = String(val);
@@ -2846,10 +2853,10 @@ Content-Type: text/html; charset=UTF-8
               <div class="flex items-center justify-between gap-2 max-w-sm group">
                 <span class="font-bold text-white truncate select-all" title="${escapedIoc}">${escapedIoc}</span>
                 <div class="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <button onclick="copyToClipboard(defangIndicator('${escapedIoc}'), 'Copied defanged IoC: ${escapedIoc}')" class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 hover:bg-cyber-cyan/20 text-slate-400 hover:text-cyber-cyan border border-cyber-border transition" title="Copy Defanged [.]">
+                  <button onclick="copyToClipboard(defangIndicator(${jsArg(r.ioc)}), ${jsArg('Copied defanged IoC: ' + r.ioc)})" class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 hover:bg-cyber-cyan/20 text-slate-400 hover:text-cyber-cyan border border-cyber-border transition" title="Copy Defanged [.]">
                     [.]
                   </button>
-                  <button onclick="copyToClipboard('${escapedIoc}', 'Copied raw IoC: ${escapedIoc}')" class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-cyber-border transition" title="Copy Raw IoC">
+                  <button onclick="copyToClipboard(${jsArg(r.ioc)}, ${jsArg('Copied raw IoC: ' + r.ioc)})" class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-cyber-border transition" title="Copy Raw IoC">
                     raw
                   </button>
                 </div>
@@ -2860,13 +2867,13 @@ Content-Type: text/html; charset=UTF-8
             <td class="py-3 px-4 text-slate-300 text-xs">${secondaryScore}</td>
             <td class="py-3 px-4">${notesHtml}</td>
             <td class="py-3 px-4 text-center">
-              <button onclick='openSingleHuntModal("${escapedIoc}", "${escapeHtml(r.type)}", "${escapeHtml(r.verdict)}")' class="px-2 py-1 rounded bg-cyber-cyan/10 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/30 text-[11px] font-bold flex items-center gap-1 mx-auto transition" title="1-Click SIEM Threat Hunting Queries">
+              <button onclick="openSingleHuntModal(${jsArg(r.ioc)}, ${jsArg(r.type)}, ${jsArg(r.verdict)})" class="px-2 py-1 rounded bg-cyber-cyan/10 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/30 text-[11px] font-bold flex items-center gap-1 mx-auto transition" title="1-Click SIEM Threat Hunting Queries">
                 <i data-lucide="crosshair" class="w-3 h-3"></i>
                 <span>Hunt</span>
               </button>
             </td>
             <td class="py-3 px-4 text-center">
-              <button onclick='openInspectDrawer("${escapedIoc}")' class="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition" title="Inspect Indicator Telemetry">
+              <button onclick="openInspectDrawer(${jsArg(r.ioc)})" class="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition" title="Inspect Indicator Telemetry">
                 <i data-lucide="eye" class="w-4 h-4"></i>
               </button>
             </td>
@@ -2898,7 +2905,7 @@ Content-Type: text/html; charset=UTF-8
       // 1. Header Badges & Title
       const vBadge = document.getElementById('inspect-verdict-badge');
       vBadge.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold border ${verdictBadgeClass}`;
-      vBadge.innerHTML = `<span class="w-2 h-2 rounded-full ${dotColor}"></span>${verdict.toUpperCase()}`;
+      vBadge.innerHTML = `<span class="w-2 h-2 rounded-full ${dotColor}"></span>${escapeHtml(verdict.toUpperCase())}`;
 
       const tBadge = document.getElementById('inspect-type-badge');
       tBadge.innerText = item.type.toUpperCase();
@@ -2914,15 +2921,15 @@ Content-Type: text/html; charset=UTF-8
       const actionsElem = document.getElementById('inspect-actions');
       const defanged = defangIndicator(item.ioc);
       actionsElem.innerHTML = `
-        <button onclick="copyToClipboard('${escapeHtml(defanged)}', 'Defanged IoC copied!')" class="px-3 py-1.5 rounded-lg bg-cyber-cyan/15 hover:bg-cyber-cyan/25 border border-cyber-cyan/40 text-cyber-cyan font-bold transition flex items-center gap-1.5 glow-cyan" title="Copy defanged string for ticket">
+        <button onclick="copyToClipboard(${jsArg(defanged)}, 'Defanged IoC copied!')" class="px-3 py-1.5 rounded-lg bg-cyber-cyan/15 hover:bg-cyber-cyan/25 border border-cyber-cyan/40 text-cyber-cyan font-bold transition flex items-center gap-1.5 glow-cyan" title="Copy defanged string for ticket">
           <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
           <span>Copy Defanged [.]</span>
         </button>
-        <button onclick="copyToClipboard('${escapeHtml(item.ioc)}', 'Raw IoC copied!')" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-cyber-border text-slate-200 font-bold transition flex items-center gap-1.5" title="Copy live indicator">
+        <button onclick="copyToClipboard(${jsArg(item.ioc)}, 'Raw IoC copied!')" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-cyber-border text-slate-200 font-bold transition flex items-center gap-1.5" title="Copy live indicator">
           <i data-lucide="copy" class="w-3.5 h-3.5"></i>
           <span>Copy Raw</span>
         </button>
-        <button onclick='openSingleHuntModal("${escapeHtml(item.ioc)}", "${escapeHtml(item.type)}", "${escapeHtml(item.verdict)}")' class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-bold transition flex items-center gap-1.5 glow-amber" title="SIEM Threat Hunting queries">
+        <button onclick="openSingleHuntModal(${jsArg(item.ioc)}, ${jsArg(item.type)}, ${jsArg(item.verdict)})" class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-bold transition flex items-center gap-1.5 glow-amber" title="SIEM Threat Hunting queries">
           <i data-lucide="crosshair" class="w-3.5 h-3.5"></i>
           <span>Hunt</span>
         </button>
@@ -3673,17 +3680,6 @@ tags:
     let completedTasksMap = {}; // { playbookId: Set(taskId) }
     let activePhaseFilter = 'all';
 
-    // Helper: Safely escape HTML characters
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
     async function openPlaybookModal(preferredId = null) {
       const modal = document.getElementById('modal-soc-playbook');
       if (!modal) return;
@@ -3877,7 +3873,7 @@ tags:
                 type="checkbox" 
                 id="chk-${task.id}" 
                 ${isChecked ? 'checked' : ''} 
-                onchange="togglePlaybookTask('${task.id}')"
+                onchange="togglePlaybookTask(${jsArg(task.id)})"
                 class="mt-1 w-4 h-4 rounded border-cyber-border bg-[#090d16] text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer accent-amber-500 flex-shrink-0"
               />
               <div class="flex-1 min-w-0">
@@ -4057,16 +4053,16 @@ tags:
       if (geo && geo.success) {
         geoBox.innerHTML = `
           <div class="grid grid-cols-2 gap-2">
-            <div><span class="text-slate-500">IP Query:</span> <span class="text-white font-bold">${geo.ip}</span></div>
-            <div><span class="text-slate-500">Country:</span> <span class="text-white">${geo.country} [${geo.country_code}]</span></div>
-            <div><span class="text-slate-500">City / Region:</span> <span class="text-white">${geo.city}, ${geo.region}</span></div>
-            <div><span class="text-slate-500">Timezone:</span> <span class="text-white">${geo.timezone}</span></div>
-            <div><span class="text-slate-500">Coordinates:</span> <span class="text-white">${geo.lat}, ${geo.lon}</span></div>
-            <div><span class="text-slate-500">ASN:</span> <span class="text-cyber-cyan font-bold">${geo.asn}</span></div>
-            <div class="col-span-2"><span class="text-slate-500">ISP / Org:</span> <span class="text-white">${geo.isp} // ${geo.org}</span></div>
+            <div><span class="text-slate-500">IP Query:</span> <span class="text-white font-bold">${escapeHtml(geo.ip)}</span></div>
+            <div><span class="text-slate-500">Country:</span> <span class="text-white">${escapeHtml(geo.country)} [${escapeHtml(geo.country_code)}]</span></div>
+            <div><span class="text-slate-500">City / Region:</span> <span class="text-white">${escapeHtml(geo.city)}, ${escapeHtml(geo.region)}</span></div>
+            <div><span class="text-slate-500">Timezone:</span> <span class="text-white">${escapeHtml(geo.timezone)}</span></div>
+            <div><span class="text-slate-500">Coordinates:</span> <span class="text-white">${escapeHtml(geo.lat)}, ${escapeHtml(geo.lon)}</span></div>
+            <div><span class="text-slate-500">ASN:</span> <span class="text-cyber-cyan font-bold">${escapeHtml(geo.asn)}</span></div>
+            <div class="col-span-2"><span class="text-slate-500">ISP / Org:</span> <span class="text-white">${escapeHtml(geo.isp)} // ${escapeHtml(geo.org)}</span></div>
           </div>
           <div class="pt-2 flex items-center gap-2">
-            <button onclick="sendToTriage('${geo.ip}')" class="px-2.5 py-1 text-[11px] rounded bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition flex items-center gap-1">
+            <button onclick="sendToTriage(${jsArg(geo.ip)})" class="px-2.5 py-1 text-[11px] rounded bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition flex items-center gap-1">
               <i data-lucide="target" class="w-3 h-3"></i> Triage this IP
             </button>
           </div>
@@ -4087,14 +4083,14 @@ tags:
           
           whoisBox.innerHTML = `
             <div class="space-y-1.5">
-              <div><span class="text-slate-500">Registrar:</span> <span class="text-white font-bold">${whois.registrar}</span></div>
-              <div><span class="text-slate-500">Created Date:</span> <span class="text-slate-200">${whois.created}</span></div>
-              <div><span class="text-slate-500">Expiration Date:</span> <span class="text-slate-200">${whois.expires}</span></div>
-              <div><span class="text-slate-500">Last Updated:</span> <span class="text-slate-200">${whois.updated}</span></div>
-              <div><span class="text-slate-500">Nameservers:</span> <span class="text-slate-300">${whois.nameservers.join(', ') || 'None'}</span></div>
+              <div><span class="text-slate-500">Registrar:</span> <span class="text-white font-bold">${escapeHtml(whois.registrar)}</span></div>
+              <div><span class="text-slate-500">Created Date:</span> <span class="text-slate-200">${escapeHtml(whois.created)}</span></div>
+              <div><span class="text-slate-500">Expiration Date:</span> <span class="text-slate-200">${escapeHtml(whois.expires)}</span></div>
+              <div><span class="text-slate-500">Last Updated:</span> <span class="text-slate-200">${escapeHtml(whois.updated)}</span></div>
+              <div><span class="text-slate-500">Nameservers:</span> <span class="text-slate-300">${escapeHtml((whois.nameservers || []).join(', ')) || 'None'}</span></div>
             </div>
             <div class="pt-2 flex items-center gap-2">
-              <button onclick="sendToTriage('${data.target}')" class="px-2.5 py-1 text-[11px] rounded bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition flex items-center gap-1">
+              <button onclick="sendToTriage(${jsArg(data.target)})" class="px-2.5 py-1 text-[11px] rounded bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition flex items-center gap-1">
                 <i data-lucide="target" class="w-3 h-3"></i> Triage this Domain
               </button>
             </div>
@@ -4102,13 +4098,13 @@ tags:
         } else {
           whoisBadge.innerText = 'NOT FOUND / PRIVATE';
           whoisBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400';
-          whoisBox.innerHTML = `<div class="text-slate-500">${whois?.error || 'RDAP query returned no records'}</div>`;
+          whoisBox.innerHTML = `<div class="text-slate-500">${escapeHtml(whois?.error || 'RDAP query returned no records')}</div>`;
         }
       } else {
         whoisBadge.innerText = 'IP PTR LOOKUP';
         whoisBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-blue-500/15 text-blue-400';
         whoisBox.innerHTML = `
-          <div><span class="text-slate-500">PTR Hostname:</span> <span class="text-white font-bold break-all">${data.ptr || 'No PTR Record'}</span></div>
+          <div><span class="text-slate-500">PTR Hostname:</span> <span class="text-white font-bold break-all">${escapeHtml(data.ptr || 'No PTR Record')}</span></div>
           <p class="text-[11px] text-slate-500 mt-1">PTR is the reverse DNS mapping from IP address back to canonical host.</p>
         `;
       }
@@ -4123,15 +4119,15 @@ tags:
         shodanBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400';
 
         const portBadges = (shodan.ports || []).map(p => 
-          `<span class="px-2 py-0.5 rounded bg-cyber-cyan/10 border border-cyber-cyan/30 text-cyber-cyan font-bold text-[11px]">${p}</span>`
+          `<span class="px-2 py-0.5 rounded bg-cyber-cyan/10 border border-cyber-cyan/30 text-cyber-cyan font-bold text-[11px]">${escapeHtml(p)}</span>`
         ).join(' ') || '<span class="text-slate-500">None detected</span>';
 
         const vulnBadges = (shodan.vulns || []).map(v => 
-          `<a href="https://nvd.nist.gov/vuln/detail/${v}" target="_blank" class="px-2 py-0.5 rounded bg-red-500/15 border border-red-500/30 text-red-400 hover:text-red-300 font-bold text-[11px] inline-flex items-center gap-1">${v}</a>`
+          `<a href="https://nvd.nist.gov/vuln/detail/${encodeURIComponent(v)}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-red-500/15 border border-red-500/30 text-red-400 hover:text-red-300 font-bold text-[11px] inline-flex items-center gap-1">${escapeHtml(v)}</a>`
         ).join(' ') || '<span class="text-emerald-400 text-[11px]">No active CVEs indexed</span>';
 
         const tagBadges = (shodan.tags || []).map(t => 
-          `<span class="px-2 py-0.5 rounded bg-white/5 border border-cyber-border text-slate-300 text-[10px] uppercase">${t}</span>`
+          `<span class="px-2 py-0.5 rounded bg-white/5 border border-cyber-border text-slate-300 text-[10px] uppercase">${escapeHtml(t)}</span>`
         ).join(' ');
 
         shodanBox.innerHTML = `
@@ -4150,7 +4146,7 @@ tags:
       } else {
         shodanBadge.innerText = 'NO EXPOSURE';
         shodanBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-emerald-500/15 text-emerald-400';
-        shodanBox.innerHTML = `<div class="text-slate-400 text-xs">${shodan?.message || 'No open ports or active host CVEs indexed in Shodan InternetDB.'}</div>`;
+        shodanBox.innerHTML = `<div class="text-slate-400 text-xs">${escapeHtml(shodan?.message || 'No open ports or active host CVEs indexed in Shodan InternetDB.')}</div>`;
       }
 
       document.getElementById('recon-raw-json').innerText = JSON.stringify(data, null, 2);
@@ -4292,7 +4288,7 @@ tags:
             <div class="text-[11px] text-slate-400">Size: ${(att.size_bytes / 1024).toFixed(1)} KB</div>
             <div class="text-[10px] text-slate-500 break-all">SHA256: <span class="text-slate-300">${escapeHtml(att.sha256)}</span></div>
             <div class="pt-1 flex items-center gap-2">
-              <button onclick="sendToTriage('${escapeHtml(att.sha256)}')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 hover:bg-cyber-cyan/25 transition">
+              <button onclick="sendToTriage(${jsArg(att.sha256)})" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 hover:bg-cyber-cyan/25 transition">
                 Triage Hash in Engine
               </button>
             </div>
@@ -4313,11 +4309,11 @@ tags:
           <div class="p-2 rounded bg-[#090d16] border border-cyber-border flex items-center justify-between gap-2">
             <span class="text-[11px] text-cyber-cyan truncate max-w-sm">${escapeHtml(link)}</span>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button onclick="traceExtractedUrl('${escapeHtml(link)}')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyber-cyan/10 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/30 transition flex items-center gap-1" title="Trace Redirect Chain">
+              <button onclick="traceExtractedUrl(${jsArg(link)})" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyber-cyan/10 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/30 transition flex items-center gap-1" title="Trace Redirect Chain">
                 <i data-lucide="route" class="w-3 h-3"></i>
                 <span>Trace</span>
               </button>
-              <button onclick="sendToTriage('${escapeHtml(link)}')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition">
+              <button onclick="sendToTriage(${jsArg(link)})" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition">
                 Triage URL
               </button>
             </div>
@@ -4337,13 +4333,13 @@ tags:
         hopsList.innerHTML = hops.map(h => `
           <div class="p-2.5 rounded bg-[#090d16] border border-cyber-border flex items-center justify-between text-xs">
             <div>
-              <span class="font-bold text-cyber-cyan">Hop #${h.hop_index}</span>
-              <span class="text-white ml-2">${h.by || 'Unknown Server'}</span>
-              ${h.from_ip ? `<span class="text-slate-400 ml-1">(${h.from_ip})</span>` : ''}
-              <div class="text-[10px] text-slate-500">${h.raw_date || ''}</div>
+              <span class="font-bold text-cyber-cyan">Hop #${escapeHtml(h.hop_index)}</span>
+              <span class="text-white ml-2">${escapeHtml(h.by || 'Unknown Server')}</span>
+              ${h.from_ip ? `<span class="text-slate-400 ml-1">(${escapeHtml(h.from_ip)})</span>` : ''}
+              <div class="text-[10px] text-slate-500">${escapeHtml(h.raw_date)}</div>
             </div>
             ${h.from_ip ? `
-              <button onclick="sendToTriage('${h.from_ip}')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition">
+              <button onclick="sendToTriage(${jsArg(h.from_ip)})" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition">
                 Triage IP
               </button>
             ` : ''}
@@ -4496,7 +4492,7 @@ tags:
                   </span>
                   <span class="text-slate-400 text-[11px] truncate hidden sm:inline">Server: ${escapeHtml(h.server || 'Unknown')}</span>
                 </div>
-                <button onclick="sendToTriage('${escapeHtml(h.url)}')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition">
+                <button onclick="sendToTriage(${jsArg(h.url)})" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 hover:bg-cyber-cyan/15 text-slate-300 hover:text-cyber-cyan border border-cyber-border transition">
                   Triage Hop
                 </button>
               </div>
@@ -4638,7 +4634,7 @@ tags:
             ? ps.extracted_urls.map(u => `
                 <div class="flex items-center justify-between gap-2 p-1.5 rounded bg-[#090d16] border border-cyber-border">
                   <span class="text-cyber-cyan truncate text-[11px]">${escapeHtml(u)}</span>
-                  <button onclick="sendDeobfUrlToTriage('${escapeHtml(u)}')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/30 shrink-0">
+                  <button onclick="sendDeobfUrlToTriage(${jsArg(u)})" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/30 shrink-0">
                     Triage URL
                   </button>
                 </div>
@@ -4982,12 +4978,12 @@ tags:
 
       tbody.innerHTML = data.entries.map(e => `
         <tr class="hover:bg-white/[0.02]">
-          <td class="py-2 px-3 text-white font-bold">${e.ioc_value}</td>
-          <td class="py-2 px-3 text-slate-400 uppercase">${e.ioc_type}</td>
-          <td class="py-2 px-3 font-semibold text-slate-300">${e.overall_verdict}</td>
-          <td class="py-2 px-3 text-cyber-cyan">${e.hit_count}</td>
-          <td class="py-2 px-3 text-slate-500 text-[10px]">${e.updated_at}</td>
-          <td class="py-2 px-3 text-slate-500 text-[10px]">${e.expires_at}</td>
+          <td class="py-2 px-3 text-white font-bold">${escapeHtml(e.ioc_value)}</td>
+          <td class="py-2 px-3 text-slate-400 uppercase">${escapeHtml(e.ioc_type)}</td>
+          <td class="py-2 px-3 font-semibold text-slate-300">${escapeHtml(e.overall_verdict)}</td>
+          <td class="py-2 px-3 text-cyber-cyan">${escapeHtml(e.hit_count)}</td>
+          <td class="py-2 px-3 text-slate-500 text-[10px]">${escapeHtml(e.updated_at)}</td>
+          <td class="py-2 px-3 text-slate-500 text-[10px]">${escapeHtml(e.expires_at)}</td>
         </tr>
       `).join('');
     }
@@ -5679,7 +5675,7 @@ tags:
 
           return `
             <div 
-              onclick='showMitreTechniqueDetail("${tech.id}")'
+              onclick="showMitreTechniqueDetail(${jsArg(tech.id)})"
               class="p-2.5 rounded-lg border text-xs font-mono transition cursor-pointer ${cardStyle}"
               title="${escapeHtml(tech.name)}"
             >
