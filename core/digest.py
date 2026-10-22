@@ -6,9 +6,11 @@ Collects stored feed articles for a date range, keeps the ones that touch the cr
 local watchlist correlation (products, owners) afterwards - the model only ever sees article text.
 """
 
+import re
 from datetime import date, datetime, time as dtime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+from core.cve import fetch_kev_catalog
 from core.database import get_feed_articles_between, save_digest
 from core.feed import refresh_feed_store
 from core.llm import LLMError, complete_json, resolve_provider
@@ -156,7 +158,157 @@ def _digest_prompt(articles: List[Dict[str, Any]], period: Dict[str, str]) -> st
             f'<article ref="{ref}">\n<title>{a["title"]}</title>\n<source>{a.get("source", "")}</source>\n'
             f'<published>{a.get("published_at", "")} UTC</published>\n<text>\n{text}\n</text>\n</article>'
         )
+    # Restated at the end: small local models tend to drift into English otherwise.
+    parts.append("\nTulis semua teks bebas (overview, key_themes, priority_actions, headline, summary, recommended_actions) "
+                 "dalam Bahasa Indonesia. Gunakan nomor ref artikel apa adanya.")
     return "\n".join(parts)
+
+
+# ------------------------------------------------------------------------------
+# Report structure: issues (grouped articles), owner impact, KPIs
+# ------------------------------------------------------------------------------
+
+URGENCY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+EXPLOIT_RANK = {"exploited_in_the_wild": 0, "public_poc": 1, "not_reported": 2, "not_applicable": 3}
+_KEY_TOKEN = re.compile(r"\b(?:[A-Z][a-z]+[A-Z][A-Za-z0-9]*|[A-Za-z]+\d+[A-Za-z0-9]*|[A-Z]{2,}[a-z]+[A-Za-z]*)\b")
+_GENERIC_TOKENS = {"github", "gitlab", "wordpress", "javascript", "powershell", "youtube", "linkedin", "openai", "chatgpt",
+                   "microsoft", "google", "iphone", "macos", "ios", "cve", "rce", "cisa", "fbi", "usb", "api", "apis"}
+
+
+def _key_tokens(title: str) -> set:
+    """Distinctive story tokens such as PHP2Shell, LiteLLM, UpdraftCentral, ClickFix."""
+    return {t.lower() for t in _KEY_TOKEN.findall(title or "") if len(t) >= 5 and t.lower() not in _GENERIC_TOKENS}
+
+
+_TITLE_STOPWORDS = {"with", "from", "that", "this", "into", "over", "after", "before", "their", "about", "across", "could",
+                    "allow", "allows", "users", "attacks", "attack", "hackers", "security", "update", "updates", "new", "using",
+                    "what", "warns", "issues", "adds", "gets", "used", "behind", "during", "years"}
+
+
+def _title_words(title: str) -> set:
+    return {w for w in re.findall(r"[a-z0-9]+", (title or "").lower()) if len(w) >= 4 and w not in _TITLE_STOPWORDS}
+
+
+def group_issues(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Merges articles about the same story (shared CVE or distinctive title token) into one issue."""
+    parent = list(range(len(articles)))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    def union(i, j):
+        parent[find(i)] = find(j)
+
+    owners_by_key: Dict[str, int] = {}
+    for i, a in enumerate(articles):
+        keys = {f"cve:{c}" for c in a.get("cves", [])} | {f"tok:{t}" for t in _key_tokens(a.get("title", ""))}
+        for key in keys:
+            if key in owners_by_key:
+                union(i, owners_by_key[key])
+            else:
+                owners_by_key[key] = i
+
+    # Same watchlist products and at least two shared title words ("PHP warns admins of two critical flaws"
+    # vs "PHP Issues Emergency Patches for Two Critical ... Flaws") are the same story told twice.
+    signatures = [
+        (frozenset(m.get("product") for m in a.get("watchlist_matches", []) if m.get("level") == "product"), _title_words(a.get("title", "")))
+        for a in articles
+    ]
+    for i in range(len(articles)):
+        for j in range(i + 1, len(articles)):
+            if signatures[i][0] and signatures[i][0] == signatures[j][0] and len(signatures[i][1] & signatures[j][1]) >= 2:
+                union(i, j)
+
+    clusters: Dict[int, List[Dict[str, Any]]] = {}
+    for i, a in enumerate(articles):
+        clusters.setdefault(find(i), []).append(a)
+
+    issues = []
+    for members in clusters.values():
+        members.sort(key=lambda a: (URGENCY_RANK.get(a.get("urgency"), 4), EXPLOIT_RANK.get(a.get("exploitation"), 4), a.get("published_at", "")))
+        lead = members[0]
+        actions, cves, kev = [], [], []
+        products: Dict[str, Dict[str, Any]] = {}
+        for a in members:
+            for act in a.get("recommended_actions", []):
+                if act and act.lower() not in {x.lower() for x in actions}:
+                    actions.append(act)
+            for c in a.get("cves", []):
+                if c not in cves:
+                    cves.append(c)
+            for c in a.get("kev_cves", []):
+                if c not in kev:
+                    kev.append(c)
+            for m in a.get("watchlist_matches", []):
+                key = f"{m.get('level')}:{m.get('product')}"
+                entry = products.setdefault(key, {**m, "owners": list(m.get("owners", []))})
+                for o in m.get("owners", []):
+                    if o not in entry["owners"]:
+                        entry["owners"].append(o)
+        product_level = [p for p in products.values() if p.get("level") == "product"]
+        vendor_level = [p for p in products.values() if p.get("level") != "product"]
+        issues.append({
+            "title": lead.get("headline") or lead.get("title", ""),
+            "urgency": lead.get("urgency", "low"),
+            "exploitation": min((a.get("exploitation", "not_reported") for a in members), key=lambda e: EXPLOIT_RANK.get(e, 4)),
+            "summary": lead.get("summary", ""),
+            "recommended_actions": actions[:5],
+            "cves": cves,
+            "kev_cves": kev,
+            "products": sorted(product_level, key=lambda p: -{"critical": 3, "high": 2, "normal": 1}.get(p.get("criticality"), 0)),
+            "vendor_only": vendor_level if not product_level else [],
+            "owners": sorted({o for p in product_level for o in p.get("owners", [])}),
+            "first_seen": min(a.get("published_at", "") for a in members),
+            "sources": [{"title": a.get("title", ""), "source": a.get("source", ""), "link": a.get("link", ""),
+                         "published_at": a.get("published_at", "")} for a in members],
+        })
+    issues.sort(key=lambda i: (URGENCY_RANK.get(i["urgency"], 4), EXPLOIT_RANK.get(i["exploitation"], 4), -len(i["sources"])))
+    return issues
+
+
+def owner_impact(issues: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Per owner: how many issues of each urgency touch its products (vendor-only matches excluded)."""
+    rows: Dict[str, Dict[str, Any]] = {}
+    for idx, issue in enumerate(issues, start=1):
+        for p in issue["products"]:
+            for owner in p.get("owners", []):
+                row = rows.setdefault(owner, {"owner": owner, "critical": 0, "high": 0, "other": 0, "issues": [], "products": []})
+                if idx not in row["issues"]:
+                    row["issues"].append(idx)
+                    bucket = issue["urgency"] if issue["urgency"] in ("critical", "high") else "other"
+                    row[bucket] += 1
+                if p["product"] not in row["products"]:
+                    row["products"].append(p["product"])
+    return sorted(rows.values(), key=lambda r: (-r["critical"], -r["high"], -r["other"], r["owner"]))
+
+
+def report_kpis(digest: Dict[str, Any], issues: List[Dict[str, Any]], impact: List[Dict[str, Any]]) -> Dict[str, int]:
+    return {
+        "articles": len(digest.get("articles", [])),
+        "issues": len(issues),
+        "critical": sum(1 for i in issues if i["urgency"] == "critical"),
+        "high": sum(1 for i in issues if i["urgency"] == "high"),
+        "exploited": sum(1 for i in issues if i["exploitation"] == "exploited_in_the_wild"),
+        "kev": len({c for i in issues for c in i["kev_cves"]}),
+        "owners": len(impact),
+    }
+
+
+def enrich_digest(digest: Dict[str, Any]) -> Dict[str, Any]:
+    """Adds issues / owner impact / KPIs (also for digests stored before these existed)."""
+    issues = group_issues(digest.get("articles", []))
+    impact = owner_impact(issues)
+    return {**digest, "issues": issues, "owner_impact": impact, "kpis": report_kpis(digest, issues, impact)}
+
+
+def _kev_ids() -> set:
+    try:
+        return {v.get("cveID", "").upper() for v in fetch_kev_catalog()}
+    except Exception:
+        return set()
 
 
 def generate_digest(days: Optional[int] = None, start_date: Optional[str] = None, end_date: Optional[str] = None,
@@ -182,6 +334,7 @@ def generate_digest(days: Optional[int] = None, start_date: Optional[str] = None
         raise DigestError(e.error_type, e.message)
 
     by_ref = {item.get("ref"): item for item in result.get("articles", []) if isinstance(item, dict)}
+    kev_ids = _kev_ids()
     digest_articles = []
     for ref, a in enumerate(selected, start=1):
         ai = by_ref.get(ref, {})
@@ -192,6 +345,7 @@ def generate_digest(days: Optional[int] = None, start_date: Optional[str] = None
             "source": a.get("source", ""),
             "published_at": a.get("published_at", ""),
             "cves": a["cves"],
+            "kev_cves": [c for c in a["cves"] if c in kev_ids],
             "watchlist_matches": [
                 {k: m[k] for k in ("level", "product", "vendor", "criticality", "owners")} for m in a["watchlist_matches"]
             ],
@@ -202,8 +356,7 @@ def generate_digest(days: Optional[int] = None, start_date: Optional[str] = None
             "recommended_actions": ai.get("recommended_actions", []),
         })
 
-    urgency_rank = {"critical": 0, "high": 1, "medium": 2, "low": 3}
-    digest_articles.sort(key=lambda d: (urgency_rank.get(d["urgency"], 4), d["ref"]))
+    digest_articles.sort(key=lambda d: (URGENCY_RANK.get(d["urgency"], 4), d["ref"]))
 
     digest = {
         "period_start": period["from"],
@@ -220,5 +373,6 @@ def generate_digest(days: Optional[int] = None, start_date: Optional[str] = None
         "priority_actions": result.get("priority_actions", []),
         "articles": digest_articles,
     }
+    digest = enrich_digest(digest)
     digest["id"] = save_digest(digest)
     return digest
