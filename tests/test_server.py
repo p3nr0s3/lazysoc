@@ -26,6 +26,52 @@ def test_parse_endpoint():
     assert "md5" in types
 
 
+def test_feed_summarize_rejects_unknown_article(monkeypatch):
+    import server
+    monkeypatch.setattr(server, "get_article_by_link", lambda link: None)
+    res = client.post("/api/feed/summarize", json={"link": "https://example.test/not-in-feed"})
+    assert res.status_code == 404
+
+
+def test_watchlist_upload_preview_does_not_save(monkeypatch, tmp_path):
+    import core.watchlist_import as wi
+    target = tmp_path / "watchlist.json"
+    monkeypatch.setattr(wi, "WATCHLIST_FILE", target)
+    res = client.post("/api/watchlist/upload", files={"file": ("list.csv", b"owner,product\nInternal,FortiGate\n")}, data={"apply": "false"})
+    assert res.status_code == 200
+    assert res.json()["report"]["assets"] == 1
+    assert not target.exists()
+
+    res = client.post("/api/watchlist/upload", files={"file": ("list.csv", b"owner,product\nInternal,FortiGate\n")}, data={"apply": "true"})
+    assert res.json()["applied"] is True
+    assert target.exists()
+
+
+def test_watchlist_upload_rejects_bad_file():
+    res = client.post("/api/watchlist/upload", files={"file": ("list.txt", b"x")}, data={"apply": "false"})
+    assert res.status_code == 400
+
+
+def test_watchlist_template_download():
+    res = client.get("/api/watchlist/template")
+    assert res.status_code == 200
+    assert res.content[:2] == b"PK"  # xlsx is a zip
+
+
+def test_digest_pdf_unknown_id():
+    assert client.get("/api/digest/999999/pdf").status_code == 404
+
+
+def test_ai_providers_endpoint():
+    data = client.get("/api/ai/providers").json()
+    assert set(data["providers"]) == {"claude", "local"}
+
+
+def test_watchlist_cve_rejects_bad_id():
+    res = client.get("/api/watchlist/cve/not-a-cve")
+    assert res.status_code == 400
+
+
 def test_index_html_served():
     res = client.get("/")
     assert res.status_code == 200

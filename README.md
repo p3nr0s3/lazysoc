@@ -106,6 +106,15 @@
 ### 🗺️ 16. MITRE ATT&CK® Navigator Layer Export
 - One-click export of incident threat coverage into official **MITRE ATT&CK Navigator v4.5** layer JSON files (`lazysoc_mitre_layer.json`) ready for direct import into the online ATT&CK Navigator.
 
+### 🧭 17. Critical Tools Watchlist & AI Feed Insight
+- **Watchlist correlation**: Cyber Feeds articles are tagged with the internal and customer products they mention (product aliases, or vendor-only as a weaker signal), ranked by criticality, and filterable per owner or "My Stack only".
+- **KEV exposure with version checks**: CISA KEV entries that hit watchlist products are checked against each deployment's recorded version using the NVD CPE version ranges (`TERDAMPAK` / `VERSI AMAN` / `PERLU CEK`). CVE IDs inside articles can be checked the same way.
+- **AI summary (Claude)**: one click summarizes an article into a structured brief (urgency, exploitation status, affected/fixed versions, recommended actions). Only the public article text is sent to the Claude API; the watchlist never leaves the server. Summaries are cached in SQLite.
+- **General / Critical Tools mode**: switch the feed between all news and only news that touches the watchlist; filter per owner and search by keyword or product name.
+- **Upload the list from the UI** ("Kelola List"): `.xlsx` / `.csv` using the template, a per-customer workbook (one sheet per owner), or `.json`. Known products are enriched automatically from `core/product_catalog.json` (aliases, CPE, KEV names), so version checks work without hand-written mappings. The current list can be downloaded as `.xlsx`, edited and re-uploaded; the previous list is backed up in `data/`.
+- **Period digest** ("Ringkasan Periode"): pick today / 3 / 7 / 14 / 30 days or a custom date range, and summarize the filtered news into one brief (overview, themes, priority actions, per-article urgency) with **Claude API** or a **local LLM** (any OpenAI-compatible server such as Ollama or LM Studio). Articles are stored in SQLite as they are fetched, so digests can cover days the live RSS feed no longer shows. Digests are saved and can be **exported to PDF**.
+- **Setup**: upload your list from the UI (or copy `watchlist.example.json` to `data/watchlist.json`, git-ignored); set `ANTHROPIC_API_KEY` and/or `LOCAL_LLM_BASE_URL` + `LOCAL_LLM_MODEL` in `.env`. Run this only on internal instances: the watchlist describes your customers' attack surface.
+
 ---
 
 

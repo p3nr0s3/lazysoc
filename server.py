@@ -38,8 +38,23 @@ from core.database import (
     get_scan_history,
 )
 from core.exporter import export_to_csv, export_to_json
-from core.feed import get_cyber_news
+from core.feed import get_cyber_news, get_article_by_link
 from core.cve import query_cve
+from core.watchlist import get_watchlist_summary, get_kev_exposure, check_cve_impact
+from core.watchlist_import import (
+    WatchlistImportError,
+    import_watchlist,
+    save_watchlist,
+    read_current_watchlist,
+    template_xlsx,
+    export_watchlist_xlsx,
+)
+from core.ai_summary import summarize_article
+from core.llm import provider_status
+from core.digest import DigestError, preview_digest, generate_digest
+from core.database import get_digest, list_digests
+from core.pdf_export import digest_pdf
+from core.config import ALLOW_WATCHLIST_UPLOAD
 from core.playbooks import get_all_playbooks, get_playbook, generate_playbook_report
 from core.url_tracer import trace_url_redirects
 from core.deobfuscator import deobfuscate_payload
@@ -192,6 +207,25 @@ class ThreatFoxRequest(BaseModel):
 
 class MalwareBazaarRequest(BaseModel):
     hash: str
+
+
+class FeedSummaryRequest(BaseModel):
+    link: str
+    force: bool = False
+    provider: Optional[str] = None
+
+
+class DigestRequest(BaseModel):
+    days: Optional[int] = 1
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    owner: Optional[str] = None
+    mode: str = "critical"
+    provider: Optional[str] = None
+    query: Optional[str] = ""
+
+XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+MAX_WATCHLIST_UPLOAD = 5 * 1024 * 1024
 
 
 
@@ -410,9 +444,130 @@ def export_results(req: ExportRequest):
 
 
 @app.get("/api/feed")
-def get_cyber_feed_endpoint(source: str = "all", limit: int = 40):
-    """Fetches real-time cyber security news & threat advisories."""
-    return get_cyber_news(source=source, limit=limit)
+def get_cyber_feed_endpoint(source: str = "all", limit: int = 40, owner: Optional[str] = None, watchlist_only: bool = False):
+    """Fetches real-time cyber security news & threat advisories, tagged with watchlist matches."""
+    return get_cyber_news(source=source, limit=max(1, min(limit, 200)), owner=owner, watchlist_only=watchlist_only)
+
+
+@app.post("/api/feed/summarize")
+def summarize_feed_article_endpoint(req: FeedSummaryRequest):
+    """Summarizes one feed article with Claude. Only the public article text is sent to the API."""
+    article = get_article_by_link(req.link)
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found in the current feed.")
+    return summarize_article(article, force=req.force, provider=req.provider)
+
+
+@app.get("/api/ai/providers")
+def get_ai_providers_endpoint():
+    """Lists the AI providers (Claude API, local OpenAI-compatible LLM) and whether they are configured."""
+    return provider_status()
+
+
+@app.get("/api/digest/preview")
+def preview_digest_endpoint(days: Optional[int] = 1, start_date: Optional[str] = None, end_date: Optional[str] = None,
+                            owner: Optional[str] = None, mode: str = "critical", q: str = ""):
+    """Lists the stored articles a digest for this period and filter would cover (no AI call)."""
+    try:
+        return preview_digest(days=days, start_date=start_date, end_date=end_date, owner=owner or None, mode=mode, query=q)
+    except DigestError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
+
+@app.post("/api/digest")
+def generate_digest_endpoint(req: DigestRequest):
+    """Summarizes the period's (critical tools or general) news into one stored digest."""
+    try:
+        return generate_digest(days=req.days, start_date=req.start_date, end_date=req.end_date, owner=req.owner or None,
+                               mode=req.mode, provider=req.provider, query=req.query or "")
+    except DigestError as e:
+        status = 404 if e.error_type == "NO_ARTICLES" else 400 if e.error_type in ("BAD_PERIOD", "BAD_MODE", "BAD_PROVIDER") else 502
+        raise HTTPException(status_code=status, detail=e.message)
+
+
+@app.get("/api/digests")
+def list_digests_endpoint(limit: int = 20):
+    return {"digests": list_digests(limit=max(1, min(limit, 100)))}
+
+
+@app.get("/api/digest/{digest_id}")
+def get_digest_endpoint(digest_id: int):
+    digest = get_digest(digest_id)
+    if not digest:
+        raise HTTPException(status_code=404, detail="Digest not found.")
+    return digest
+
+
+@app.get("/api/digest/{digest_id}/pdf")
+def export_digest_pdf_endpoint(digest_id: int):
+    """Exports a stored digest as PDF."""
+    digest = get_digest(digest_id)
+    if not digest:
+        raise HTTPException(status_code=404, detail="Digest not found.")
+    filename = f"lazysoc_digest_{digest['period_start']}_{digest['period_end']}.pdf"
+    return StreamingResponse(
+        iter([digest_pdf(digest)]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@app.get("/api/watchlist")
+def get_watchlist_endpoint():
+    """Returns the critical tools watchlist (owners, products, deployments)."""
+    return get_watchlist_summary()
+
+
+@app.post("/api/watchlist/upload")
+async def upload_watchlist_endpoint(file: UploadFile = File(...), apply: bool = Form(False)):
+    """Parses an uploaded critical tools list (.xlsx/.csv/.json). apply=false previews, apply=true replaces the watchlist."""
+    if not ALLOW_WATCHLIST_UPLOAD:
+        raise HTTPException(status_code=403, detail="Upload watchlist dinonaktifkan (ALLOW_WATCHLIST_UPLOAD=false).")
+    content = await file.read(MAX_WATCHLIST_UPLOAD + 1)
+    if len(content) > MAX_WATCHLIST_UPLOAD:
+        raise HTTPException(status_code=413, detail="File watchlist maksimal 5 MB.")
+    try:
+        watchlist, report = import_watchlist(file.filename or "", content)
+    except WatchlistImportError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    backup = save_watchlist(watchlist) if apply else None
+    return {"applied": apply, "backup": backup, "report": report}
+
+
+@app.get("/api/watchlist/template")
+def download_watchlist_template_endpoint():
+    return StreamingResponse(
+        iter([template_xlsx()]),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": "attachment; filename=lazysoc_watchlist_template.xlsx"},
+    )
+
+
+@app.get("/api/watchlist/export")
+def export_watchlist_endpoint():
+    """Downloads the current watchlist as an editable .xlsx (same columns as the template)."""
+    return StreamingResponse(
+        iter([export_watchlist_xlsx(read_current_watchlist().get("assets", []))]),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": "attachment; filename=lazysoc_watchlist.xlsx"},
+    )
+
+
+@app.get("/api/watchlist/exposure")
+def get_watchlist_exposure_endpoint(owner: Optional[str] = None, since_days: int = 365):
+    """Lists CISA KEV entries that hit watchlist products, with per-deployment version status."""
+    return get_kev_exposure(owner=owner, since_days=max(0, min(since_days, 3650)))
+
+
+@app.get("/api/watchlist/cve/{cve_id}")
+def check_watchlist_cve_endpoint(cve_id: str, owner: Optional[str] = None, assets: Optional[str] = None):
+    """Checks one CVE's NVD version ranges against watchlist deployments."""
+    extra = [a.strip() for a in (assets or "").split(",") if a.strip()]
+    result = check_cve_impact(cve_id, owner=owner, extra_asset_ids=extra)
+    if result.get("error_type") == "INVALID_ID":
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 @app.get("/api/cve")

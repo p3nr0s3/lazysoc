@@ -54,6 +54,63 @@ def init_db():
             )
             """
         )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS nvd_cve_cache (
+                cve_id TEXT PRIMARY KEY,
+                cve_json TEXT NOT NULL,
+                fetched_at TIMESTAMP NOT NULL
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS feed_articles (
+                link TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                source TEXT,
+                source_key TEXT,
+                category TEXT,
+                summary TEXT,
+                content TEXT,
+                pub_date TEXT,
+                published_at TIMESTAMP NOT NULL,
+                fetched_at TIMESTAMP NOT NULL
+            )
+            """
+        )
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_feed_articles_published ON feed_articles (published_at)")
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS digests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                period_start TEXT NOT NULL,
+                period_end TEXT NOT NULL,
+                owner TEXT,
+                mode TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                model TEXT,
+                article_count INTEGER NOT NULL,
+                digest_json TEXT NOT NULL
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ai_summaries (
+                article_key TEXT PRIMARY KEY,
+                link TEXT,
+                model TEXT NOT NULL,
+                summary_json TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
         conn.commit()
 
 
@@ -204,6 +261,160 @@ def log_scan(total: int, mal: int, susp: int, clean: int, unk: int):
             (total, mal, susp, clean, unk),
         )
         conn.commit()
+
+
+def get_cached_nvd_cve(cve_id: str, max_age_hours: int = 72) -> Optional[Dict[str, Any]]:
+    """Returns the raw NVD CVE object if it was fetched within max_age_hours."""
+    cutoff = (utc_now() - timedelta(hours=max_age_hours)).strftime("%Y-%m-%d %H:%M:%S")
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT cve_json FROM nvd_cve_cache WHERE cve_id = ? AND fetched_at > ?",
+            (cve_id.upper(), cutoff),
+        )
+        row = cursor.fetchone()
+        return json.loads(row["cve_json"]) if row else None
+
+
+def save_cached_nvd_cve(cve_id: str, cve_obj: Dict[str, Any]):
+    """Stores a raw NVD CVE object (including its CPE configurations)."""
+    now_str = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO nvd_cve_cache (cve_id, cve_json, fetched_at) VALUES (?, ?, ?)
+            ON CONFLICT(cve_id) DO UPDATE SET cve_json = excluded.cve_json, fetched_at = excluded.fetched_at
+            """,
+            (cve_id.upper(), json.dumps(cve_obj), now_str),
+        )
+        conn.commit()
+
+
+def get_ai_summary(article_key: str) -> Optional[Dict[str, Any]]:
+    """Returns a stored AI summary for an article, if any."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT model, summary_json, created_at FROM ai_summaries WHERE article_key = ?",
+            (article_key,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return {
+            "model": row["model"],
+            "summary": json.loads(row["summary_json"]),
+            "created_at": row["created_at"],
+        }
+
+
+def save_ai_summary(article_key: str, link: str, model: str, summary: Dict[str, Any]):
+    """Stores an AI summary so each article is only summarized once."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO ai_summaries (article_key, link, model, summary_json) VALUES (?, ?, ?, ?)
+            ON CONFLICT(article_key) DO UPDATE SET
+                model = excluded.model,
+                summary_json = excluded.summary_json,
+                created_at = CURRENT_TIMESTAMP
+            """,
+            (article_key, link, model, json.dumps(summary)),
+        )
+        conn.commit()
+
+
+def save_feed_articles(articles: List[Dict[str, Any]]):
+    """Upserts fetched RSS articles so digests can cover days the live feed no longer shows."""
+    now_str = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.executemany(
+            """
+            INSERT INTO feed_articles (link, title, source, source_key, category, summary, content, pub_date, published_at, fetched_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(link) DO UPDATE SET
+                title = excluded.title,
+                category = excluded.category,
+                summary = excluded.summary,
+                content = excluded.content
+            """,
+            [
+                (
+                    a["link"], a["title"], a.get("source"), a.get("source_key"), a.get("category"),
+                    a.get("summary"), a.get("content"), a.get("pub_date"), a.get("published_at") or now_str, now_str,
+                )
+                for a in articles if a.get("link")
+            ],
+        )
+        conn.commit()
+
+
+def get_feed_articles_between(start: str, end: str, limit: int = 1000) -> List[Dict[str, Any]]:
+    """Returns stored articles published in [start, end) (UTC 'YYYY-MM-DD HH:MM:SS'), newest first."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT link, title, source, source_key, category, summary, content, pub_date, published_at
+            FROM feed_articles
+            WHERE published_at >= ? AND published_at < ?
+            ORDER BY published_at DESC
+            LIMIT ?
+            """,
+            (start, end, limit),
+        )
+        return [dict(r) for r in cursor.fetchall()]
+
+
+def get_feed_article(link: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM feed_articles WHERE link = ?", (link,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def save_digest(digest: Dict[str, Any]) -> int:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO digests (period_start, period_end, owner, mode, provider, model, article_count, digest_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                digest["period_start"], digest["period_end"], digest.get("owner"), digest["mode"],
+                digest["provider"], digest.get("model"), digest["article_count"], json.dumps(digest),
+            ),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_digest(digest_id: int) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, created_at, digest_json FROM digests WHERE id = ?", (digest_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return {**json.loads(row["digest_json"]), "id": row["id"], "created_at": row["created_at"]}
+
+
+def list_digests(limit: int = 20) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, created_at, period_start, period_end, owner, mode, provider, model, article_count
+            FROM digests ORDER BY id DESC LIMIT ?
+            """,
+            (limit,),
+        )
+        return [dict(r) for r in cursor.fetchall()]
 
 
 def get_scan_history(limit: int = 20) -> List[Dict[str, Any]]:
