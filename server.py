@@ -51,7 +51,7 @@ from core.watchlist_import import (
 )
 from core.ai_summary import summarize_article
 from core.llm import provider_status
-from core.digest import DigestError, preview_digest, generate_digest
+from core.digest import DigestError, preview_digest, generate_digest, enrich_digest
 from core.database import get_digest, list_digests
 from core.pdf_export import digest_pdf
 from core.config import ALLOW_WATCHLIST_UPLOAD
@@ -495,7 +495,7 @@ def get_digest_endpoint(digest_id: int):
     digest = get_digest(digest_id)
     if not digest:
         raise HTTPException(status_code=404, detail="Digest not found.")
-    return digest
+    return digest if "issues" in digest else enrich_digest(digest)
 
 
 @app.get("/api/digest/{digest_id}/pdf")

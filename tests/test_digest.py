@@ -35,6 +35,52 @@ def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(wl, "_state", {"mtime": None, "assets": [], "error": None})
     monkeypatch.setattr(dg, "refresh_feed_store", lambda: 0)
     monkeypatch.setattr(dg, "get_feed_articles_between", lambda start, end: [dict(a) for a in ARTICLES])
+    monkeypatch.setattr(dg, "_kev_ids", lambda: {"CVE-2099-0001"})
+
+
+def _art(title, urgency="high", cves=(), products=(("PHP", ["Internal"]),), exploitation="not_reported", actions=("Patch",)):
+    return {
+        "title": title, "headline": title, "urgency": urgency, "exploitation": exploitation, "cves": list(cves),
+        "kev_cves": [], "summary": f"Ringkasan {title}", "recommended_actions": list(actions), "source": "News",
+        "link": f"https://example.test/{abs(hash(title))}", "published_at": "2026-10-21 08:00:00",
+        "watchlist_matches": [{"level": "product", "product": p, "vendor": "", "criticality": "high", "owners": o} for p, o in products],
+    }
+
+
+def test_group_issues_merges_same_story():
+    articles = [
+        _art("PHP2Shell: Two Critical PHP RCE Flaws", urgency="critical", cves=["CVE-2026-1"], exploitation="exploited_in_the_wild"),
+        _art("PHP ships emergency patches", cves=["CVE-2026-1"]),                       # shared CVE
+        _art("PHP warns admins of two critical flaws, emergency patches coming"),     # same product + title words
+        _art("LiteLLM Compromised in Supply Chain Attack", products=(("Docker", ["Customer C"]),)),
+        _art("LiteLLM Suspects GitHub Token Leak", products=(("Docker", ["Customer C"]),)),  # shared distinctive token
+        _art("Unrelated Chrome scam detection", products=(("Google Chrome", ["LK"]),)),
+    ]
+    issues = dg.group_issues(articles)
+    sizes = sorted(len(i["sources"]) for i in issues)
+    assert sizes == [1, 2, 3]
+    top = issues[0]
+    assert top["urgency"] == "critical" and top["exploitation"] == "exploited_in_the_wild"
+    assert top["title"].startswith("PHP2Shell") and top["recommended_actions"] == ["Patch"]
+
+
+def test_owner_impact_ignores_vendor_only_matches():
+    vendor_only = _art("Critical FortiSIEM flaw", urgency="critical", products=())
+    vendor_only["watchlist_matches"] = [{"level": "vendor", "vendor": "Fortinet", "product": "Fortinet", "criticality": "critical", "owners": ["Customer D"]}]
+    issues = dg.group_issues([vendor_only, _art("GitLab RCE", urgency="critical", products=(("GitLab", ["Internal"]),))])
+    impact = dg.owner_impact(issues)
+    assert [r["owner"] for r in impact] == ["Internal"]
+    assert impact[0]["critical"] == 1
+    assert next(i for i in issues if i["vendor_only"])["owners"] == []
+
+
+def test_enrich_and_pdf_for_digest_without_issues():
+    old = {"period_start": "2026-10-20", "period_end": "2026-10-22", "mode": "critical", "provider": "local", "model": "m",
+           "article_count": 2, "overview": "x", "key_themes": [], "priority_actions": [],
+           "articles": [_art("A one", cves=["CVE-2026-9"]), _art("A two", cves=["CVE-2026-9"])]}
+    enriched = dg.enrich_digest(old)
+    assert enriched["kpis"]["issues"] == 1 and enriched["kpis"]["articles"] == 2
+    assert digest_pdf(old).startswith(b"%PDF")
 
 
 def test_period_bounds_presets_and_custom():
@@ -78,6 +124,8 @@ def test_generate_digest_merges_local_correlation_and_saves(monkeypatch):
     assert article["headline"] == "Zero-day FortiGate"
     assert article["watchlist_matches"][0]["owners"] == ["Customer A", "Internal"]
     assert article["cves"] == ["CVE-2099-0001"]
+    assert article["kev_cves"] == ["CVE-2099-0001"]
+    assert digest["kpis"]["kev"] == 1 and digest["issues"][0]["owners"] == ["Customer A", "Internal"]
     # The model never sees owners or deployment details.
     for private in ("Internal", "Customer A", "fw-01", "7.4.8"):
         assert private not in sent["prompt"]

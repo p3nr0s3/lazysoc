@@ -5818,22 +5818,35 @@ tags:
           <p class="text-slate-200 font-sans leading-relaxed text-xs">${escapeHtml(d.overview)}</p>
           ${(d.key_themes || []).length ? `<div><div class="text-[10px] uppercase text-slate-500 mb-1">Tema utama</div>${list(d.key_themes)}</div>` : ''}
           ${(d.priority_actions || []).length ? `<div><div class="text-[10px] uppercase text-slate-500 mb-1">Tindakan prioritas</div>${list(d.priority_actions)}</div>` : ''}
+          ${d.kpis ? `
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center">
+              ${[['Isu unik', d.kpis.issues, 'text-white'], ['Kritis', d.kpis.critical, 'text-red-300'], ['Tinggi', d.kpis.high, 'text-amber-300'],
+                 ['Dieksploitasi', d.kpis.exploited, 'text-red-300'], ['CVE di KEV', d.kpis.kev, 'text-cyber-cyan'], ['Owner terdampak', d.kpis.owners, 'text-white']]
+                .map(([label, value, cls]) => `<div class="rounded bg-white/5 border border-cyber-border/60 py-1.5"><div class="text-base font-bold ${cls}">${escapeHtml(value)}</div><div class="text-[9px] text-slate-500 uppercase">${escapeHtml(label)}</div></div>`).join('')}
+            </div>` : ''}
           <div class="space-y-2">
-            ${(d.articles || []).map(a => {
-              const u = DIGEST_URGENCY[a.urgency] || DIGEST_URGENCY.low;
-              const products = (a.watchlist_matches || []).map(m => m.level === 'product' ? `${m.product} (${(m.owners || []).join(', ')})` : `Vendor ${m.vendor}`).join('; ');
-              const safeLink = (a.link && /^https?:\/\//.test(a.link)) ? escapeHtml(a.link) : '#';
+            ${(d.issues || []).map((issue, idx) => {
+              const u = DIGEST_URGENCY[issue.urgency] || DIGEST_URGENCY.low;
+              const kev = new Set(issue.kev_cves || []);
+              const products = (issue.products || []).map(p => `${p.product} (${(p.owners || []).join(', ')})`).join('; ')
+                || ((issue.vendor_only || []).length ? `Vendor ${[...new Set(issue.vendor_only.map(v => v.vendor))].join(', ')} (produk spesifik tidak ada di list)` : '');
+              const sources = (issue.sources || []).map(s => {
+                const safeLink = (s.link && /^https?:\/\//.test(s.link)) ? escapeHtml(s.link) : '#';
+                return `<li><span class="text-slate-500">${escapeHtml(s.source)} · ${escapeHtml(s.published_at)}</span> — <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="text-cyber-cyan hover:underline">${escapeHtml(s.title)}</a></li>`;
+              }).join('');
               return `
                 <div class="rounded border border-cyber-border/70 p-2.5">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <span class="text-[10px] text-slate-500 font-bold">#${idx + 1}</span>
                     <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold ${u.cls}">${u.label}</span>
-                    <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="text-white font-bold hover:text-cyber-cyan">${escapeHtml(a.headline)}</a>
+                    <span class="text-white font-bold">${escapeHtml(issue.title)}</span>
                   </div>
-                  <div class="text-[10px] text-slate-500 mb-1">${escapeHtml(a.source)} · ${escapeHtml(a.published_at)} UTC · ${escapeHtml(EXPLOIT_LABEL[a.exploitation] || '')}</div>
-                  <p class="text-[11px] text-slate-300 font-sans">${escapeHtml(a.summary)}</p>
+                  <div class="text-[10px] text-slate-500 mb-1">${escapeHtml(EXPLOIT_LABEL[issue.exploitation] || '')} · ${escapeHtml((issue.sources || []).length)} sumber</div>
+                  <p class="text-[11px] text-slate-300 font-sans">${escapeHtml(issue.summary)}</p>
                   ${products ? `<div class="text-[10px] text-amber-300 mt-1">Watchlist: ${escapeHtml(products)}</div>` : ''}
-                  ${(a.cves || []).length ? `<div class="text-[10px] text-red-300 mt-0.5">CVE: ${escapeHtml(a.cves.join(', '))}</div>` : ''}
-                  ${(a.recommended_actions || []).length ? `<div class="mt-1 text-[11px]">${list(a.recommended_actions)}</div>` : ''}
+                  ${(issue.cves || []).length ? `<div class="text-[10px] text-red-300 mt-0.5">CVE: ${issue.cves.map(c => escapeHtml(c) + (kev.has(c) ? ' <b>(KEV)</b>' : '')).join(', ')}</div>` : ''}
+                  ${(issue.recommended_actions || []).length ? `<div class="mt-1 text-[11px]">${list(issue.recommended_actions)}</div>` : ''}
+                  <ul class="mt-1 text-[10px] space-y-0.5 font-sans">${sources}</ul>
                 </div>`;
             }).join('')}
           </div>
