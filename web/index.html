@@ -1394,6 +1394,76 @@
           </div>
           <div id="digest-preview" class="text-[11px] text-slate-400"></div>
           <div id="digest-result"></div>
+
+          <!-- Scheduled digests (sent to Microsoft Teams) -->
+          <div class="pt-3 border-t border-cyber-border/70 space-y-2">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h5 class="font-bold text-cyber-cyan flex items-center gap-2"><i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i> Jadwal Otomatis</h5>
+                <p id="schedule-info" class="text-[11px] text-slate-500 mt-0.5">-</p>
+              </div>
+              <button onclick="openScheduleForm()" class="px-3 py-1.5 rounded-lg bg-cyber-cyan/15 hover:bg-cyber-cyan/25 border border-cyber-cyan/40 text-cyber-cyan font-bold flex items-center gap-1.5 self-start">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Jadwal baru
+              </button>
+            </div>
+            <div id="schedule-form" class="hidden rounded-lg border border-cyber-border bg-[#0b1220] p-3 space-y-2">
+              <input type="hidden" id="sch-id">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[11px]">
+                <label class="flex flex-col gap-1 text-slate-500 sm:col-span-2">Nama jadwal
+                  <input id="sch-name" maxlength="80" placeholder="mis. Daily Critical - Internal" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                </label>
+                <label class="flex flex-col gap-1 text-slate-500">Frekuensi
+                  <select id="sch-frequency" onchange="onScheduleFrequencyChange()" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                    <option value="daily">Harian</option>
+                    <option value="weekly">Mingguan</option>
+                    <option value="monthly">Bulanan</option>
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1 text-slate-500">Jam
+                  <input type="time" id="sch-time" value="07:00" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                </label>
+                <div id="sch-weekdays-wrap" class="hidden sm:col-span-2 lg:col-span-4 flex-wrap gap-2 text-slate-300"></div>
+                <label id="sch-monthday-wrap" class="hidden flex-col gap-1 text-slate-500">Tanggal (1-31)
+                  <input type="number" id="sch-monthday" min="1" max="31" value="1" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                </label>
+                <label class="flex flex-col gap-1 text-slate-500">Periode berita
+                  <select id="sch-period" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200"></select>
+                </label>
+                <label class="flex flex-col gap-1 text-slate-500">Mode
+                  <select id="sch-mode" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                    <option value="critical">Critical Tools</option>
+                    <option value="general">General</option>
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1 text-slate-500">Owner
+                  <select id="sch-owner" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200"></select>
+                </label>
+                <label class="flex flex-col gap-1 text-slate-500">Kata kunci (opsional)
+                  <input id="sch-query" maxlength="100" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                </label>
+                <label class="flex flex-col gap-1 text-slate-500">Provider AI
+                  <select id="sch-provider" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200">
+                    <option value="">Default server</option>
+                    <option value="claude">Claude API</option>
+                    <option value="local">Local LLM</option>
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1 text-slate-500">Kirim ke Teams
+                  <select id="sch-channel" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-xs text-slate-200"></select>
+                </label>
+              </div>
+              <div class="flex flex-wrap items-center gap-4 text-[11px] text-slate-300">
+                <label class="flex items-center gap-1.5"><input type="checkbox" id="sch-enabled" checked class="accent-cyan-500"> Aktif</label>
+                <label class="flex items-center gap-1.5"><input type="checkbox" id="sch-skip-empty" checked class="accent-cyan-500"> Jangan kirim kalau tidak ada berita</label>
+              </div>
+              <div class="flex items-center gap-2 pt-1">
+                <button onclick="saveSchedule()" class="px-3 py-1.5 rounded-lg bg-cyber-cyan/20 hover:bg-cyber-cyan/30 border border-cyber-cyan/50 text-cyber-cyan font-bold">Simpan jadwal</button>
+                <button onclick="closeScheduleForm()" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-cyber-border text-slate-300">Batal</button>
+                <span id="schedule-form-msg" class="text-[11px]"></span>
+              </div>
+            </div>
+            <div id="schedule-list" class="space-y-2"></div>
+          </div>
         </div>
 
         <!-- KEV Exposure Panel (CISA KEV x watchlist, with NVD version checks) -->
@@ -5682,6 +5752,205 @@ tags:
         if (!aiProviders) loadAiProviders();
         loadDigestHistory();
         previewDigest();
+        loadSchedules();
+      }
+    }
+
+    // ---- Scheduled digests (Microsoft Teams) ----
+    const WEEKDAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    let scheduleMeta = null;
+    let scheduleItems = [];
+
+    async function loadSchedules() {
+      const list = document.getElementById('schedule-list');
+      try {
+        const res = await fetch('/api/schedules');
+        const data = await readJsonSafe(res);
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        scheduleMeta = data;
+        scheduleItems = data.schedules || [];
+      } catch (err) {
+        list.innerHTML = `<div class="text-red-400 text-[11px]">${escapeHtml(err.message)}</div>`;
+        return;
+      }
+      const channels = scheduleMeta.teams_channels || [];
+      const info = [`Zona waktu ${scheduleMeta.timezone}`];
+      info.push(scheduleMeta.scheduler_enabled ? 'scheduler aktif' : 'scheduler nonaktif (SCHEDULER_ENABLED=false)');
+      info.push(channels.length ? `channel Teams: ${channels.join(', ')}` : 'belum ada webhook Teams (TEAMS_WEBHOOK_URL)');
+      if (channels.length && !scheduleMeta.public_url_set) info.push('isi LAZYSOC_PUBLIC_URL agar tombol "Buka PDF" muncul di Teams');
+      document.getElementById('schedule-info').innerText = info.join(' · ');
+      renderSchedules();
+    }
+
+    function scheduleWhen(s) {
+      const time = s.time || '';
+      if (s.frequency === 'weekly') return `Setiap ${(s.weekdays || []).map(d => WEEKDAY_LABELS[d]).join(', ')} ${time}`;
+      if (s.frequency === 'monthly') return `Setiap tanggal ${s.month_day} ${time}`;
+      return `Setiap hari ${time}`;
+    }
+
+    function renderSchedules() {
+      const list = document.getElementById('schedule-list');
+      if (!scheduleItems.length) {
+        list.innerHTML = '<div class="text-slate-500 text-[11px]">Belum ada jadwal. Klik "Jadwal baru" untuk mengirim ringkasan otomatis ke Teams.</div>';
+        return;
+      }
+      const statusCls = { ok: 'text-emerald-400', empty: 'text-slate-400', error: 'text-red-400' };
+      list.innerHTML = scheduleItems.map(s => `
+        <div class="rounded-lg border ${s.enabled ? 'border-cyber-border' : 'border-cyber-border/40 opacity-60'} bg-[#0b1220] p-2.5 text-[11px]">
+          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-white font-bold">${escapeHtml(s.name)} ${s.enabled ? '' : '<span class="text-slate-500 font-normal">(nonaktif)</span>'}</div>
+              <div class="text-slate-400">${escapeHtml(scheduleWhen(s))} · ${escapeHtml(s.period_label)} · ${s.mode === 'critical' ? 'Critical Tools' : 'General'} · ${escapeHtml(s.owner || 'Semua owner')}${s.query ? ` · "${escapeHtml(s.query)}"` : ''}</div>
+              <div class="text-slate-500">Teams: ${escapeHtml(s.teams_channel || 'tidak dikirim')} · Berikutnya: ${escapeHtml(s.next_run_local || '-')}</div>
+              ${s.last_run_at ? `<div class="${statusCls[s.last_status] || 'text-slate-400'}">Terakhir ${escapeHtml(s.last_run_at)} UTC: ${escapeHtml(s.last_message || s.last_status)}</div>` : ''}
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+              <button onclick="runScheduleNow(${s.id})" id="sch-run-${s.id}" class="px-2 py-1 rounded bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/40">Jalankan sekarang</button>
+              ${s.last_digest_id ? `<button onclick="loadDigest(${s.last_digest_id})" class="px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border">Lihat hasil</button>` : ''}
+              <button onclick="openScheduleForm(${s.id})" class="px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border">Edit</button>
+              <button onclick="toggleSchedule(${s.id})" class="px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border">${s.enabled ? 'Nonaktifkan' : 'Aktifkan'}</button>
+              <button onclick="deleteSchedule(${s.id})" class="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/40">Hapus</button>
+            </div>
+          </div>
+        </div>`).join('') + ((scheduleMeta?.teams_channels || []).length ? `
+        <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">Tes webhook:
+          ${scheduleMeta.teams_channels.map(c => `<button onclick="testTeamsChannel(${jsArg(c)})" class="px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border">${escapeHtml(c)}</button>`).join('')}
+          <span id="teams-test-msg"></span>
+        </div>` : '');
+    }
+
+    function onScheduleFrequencyChange() {
+      const freq = document.getElementById('sch-frequency').value;
+      const weekly = document.getElementById('sch-weekdays-wrap');
+      const monthly = document.getElementById('sch-monthday-wrap');
+      weekly.classList.toggle('hidden', freq !== 'weekly');
+      weekly.classList.toggle('flex', freq === 'weekly');
+      monthly.classList.toggle('hidden', freq !== 'monthly');
+      monthly.classList.toggle('flex', freq === 'monthly');
+    }
+
+    function openScheduleForm(id) {
+      const s = scheduleItems.find(x => x.id === id) || {
+        name: '', frequency: 'daily', time: '07:00', weekdays: [0], month_day: 1, period: 'yesterday',
+        mode: feedMyStackOnly ? 'critical' : 'general', owner: feedOwnerFilter, query: '', provider: '',
+        teams_channel: (scheduleMeta?.teams_channels || [])[0] || '', enabled: true, skip_empty: true,
+      };
+      document.getElementById('sch-id').value = id || '';
+      document.getElementById('sch-name').value = s.name;
+      document.getElementById('sch-frequency').value = s.frequency;
+      document.getElementById('sch-time').value = s.time;
+      document.getElementById('sch-monthday').value = s.month_day;
+      document.getElementById('sch-weekdays-wrap').innerHTML = WEEKDAY_LABELS.map((label, d) =>
+        `<label class="flex items-center gap-1"><input type="checkbox" class="sch-weekday accent-cyan-500" value="${d}" ${(s.weekdays || []).includes(d) ? 'checked' : ''}> ${label}</label>`).join('');
+      document.getElementById('sch-period').innerHTML = Object.entries(scheduleMeta?.periods || {})
+        .map(([key, label]) => `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`).join('');
+      document.getElementById('sch-period').value = s.period;
+      document.getElementById('sch-mode').value = s.mode;
+      document.getElementById('sch-owner').innerHTML = '<option value="">Semua owner</option>' + (watchlistSummary?.owners || [])
+        .map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+      document.getElementById('sch-owner').value = s.owner || '';
+      document.getElementById('sch-query').value = s.query || '';
+      document.getElementById('sch-provider').value = s.provider || '';
+      document.getElementById('sch-channel').innerHTML = '<option value="">Tidak dikirim (simpan di Riwayat saja)</option>' + (scheduleMeta?.teams_channels || [])
+        .map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      document.getElementById('sch-channel').value = s.teams_channel || '';
+      document.getElementById('sch-enabled').checked = !!s.enabled;
+      document.getElementById('sch-skip-empty').checked = s.skip_empty !== false;
+      document.getElementById('schedule-form-msg').innerText = '';
+      onScheduleFrequencyChange();
+      document.getElementById('schedule-form').classList.remove('hidden');
+    }
+
+    function closeScheduleForm() {
+      document.getElementById('schedule-form').classList.add('hidden');
+    }
+
+    function scheduleFormPayload() {
+      return {
+        name: document.getElementById('sch-name').value,
+        frequency: document.getElementById('sch-frequency').value,
+        time: document.getElementById('sch-time').value,
+        weekdays: [...document.querySelectorAll('.sch-weekday:checked')].map(c => parseInt(c.value, 10)),
+        month_day: parseInt(document.getElementById('sch-monthday').value, 10),
+        period: document.getElementById('sch-period').value,
+        mode: document.getElementById('sch-mode').value,
+        owner: document.getElementById('sch-owner').value,
+        query: document.getElementById('sch-query').value,
+        provider: document.getElementById('sch-provider').value || null,
+        teams_channel: document.getElementById('sch-channel').value,
+        enabled: document.getElementById('sch-enabled').checked,
+        skip_empty: document.getElementById('sch-skip-empty').checked,
+      };
+    }
+
+    async function saveSchedule() {
+      const id = document.getElementById('sch-id').value;
+      const msg = document.getElementById('schedule-form-msg');
+      try {
+        const res = await fetch(id ? `/api/schedules/${encodeURIComponent(id)}` : '/api/schedules', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scheduleFormPayload()),
+        });
+        const data = await readJsonSafe(res);
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        closeScheduleForm();
+        showToast(`Jadwal disimpan. Berikutnya: ${data.next_run_local || '-'}`);
+        loadSchedules();
+      } catch (err) {
+        msg.className = 'text-[11px] text-red-400';
+        msg.innerText = err.message;
+      }
+    }
+
+    async function toggleSchedule(id) {
+      const s = scheduleItems.find(x => x.id === id);
+      if (!s) return;
+      const payload = { ...s, enabled: !s.enabled };
+      const res = await fetch(`/api/schedules/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await readJsonSafe(res);
+      if (!res.ok) showToast(data.detail || `HTTP ${res.status}`, 'error');
+      loadSchedules();
+    }
+
+    async function deleteSchedule(id) {
+      const s = scheduleItems.find(x => x.id === id);
+      if (!s || !confirm(`Hapus jadwal "${s.name}"?`)) return;
+      const res = await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+      if (!res.ok) showToast('Gagal menghapus jadwal.', 'error');
+      loadSchedules();
+    }
+
+    async function runScheduleNow(id) {
+      const btn = document.getElementById(`sch-run-${id}`);
+      if (btn) { btn.disabled = true; btn.innerText = 'Berjalan... (1-3 menit)'; }
+      try {
+        const res = await fetch(`/api/schedules/${id}/run`, { method: 'POST' });
+        const data = await readJsonSafe(res);
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        showToast(data.message || 'Selesai', data.status === 'error' ? 'error' : 'success');
+        if (data.digest_id) { loadDigest(data.digest_id); loadDigestHistory(data.digest_id); }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        loadSchedules();
+      }
+    }
+
+    async function testTeamsChannel(channel) {
+      const msg = document.getElementById('teams-test-msg');
+      msg.className = 'text-slate-400';
+      msg.innerText = 'Mengirim...';
+      try {
+        const res = await fetch('/api/teams/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel }) });
+        const data = await readJsonSafe(res);
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        msg.className = 'text-emerald-400';
+        msg.innerText = `Terkirim ke ${channel}. Cek channel Teams.`;
+      } catch (err) {
+        msg.className = 'text-red-400';
+        msg.innerText = err.message;
       }
     }
 

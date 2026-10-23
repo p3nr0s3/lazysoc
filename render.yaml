@@ -11,6 +11,15 @@ services:
         sync: false
       - key: LAZYSOC_AUTH_PASSWORD
         sync: false
+      # Scheduled digests to Microsoft Teams
+      - key: APP_TIMEZONE
+        value: Asia/Jakarta
+      - key: TEAMS_WEBHOOK_URL
+        sync: false
+      - key: LAZYSOC_PUBLIC_URL
+        sync: false
+      - key: SCHEDULER_TRIGGER_TOKEN
+        sync: false
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: ENV

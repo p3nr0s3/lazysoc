@@ -2,7 +2,7 @@
 
 import os
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -56,6 +56,10 @@ from core.database import get_digest, list_digests
 from core.pdf_export import digest_pdf
 from core.config import ALLOW_WATCHLIST_UPLOAD
 from core.auth import BasicAuthMiddleware
+from core import scheduler, teams
+from core.config import SCHEDULER_ENABLED, SCHEDULER_TRIGGER_TOKEN, APP_TIMEZONE, PUBLIC_BASE_URL
+from contextlib import asynccontextmanager
+import hmac
 from core.playbooks import get_all_playbooks, get_playbook, generate_playbook_report
 from core.url_tracer import trace_url_redirects
 from core.deobfuscator import deobfuscate_payload
@@ -72,7 +76,15 @@ from core.soc_analyst import (
 )
 
 
-app = FastAPI(title="LazySOC Threat Triage & Investigation Platform", version="3.0.0")
+@asynccontextmanager
+async def lifespan(_app):
+    if SCHEDULER_ENABLED:
+        scheduler.start_background()
+    yield
+    scheduler.stop_background()
+
+
+app = FastAPI(title="LazySOC Threat Triage & Investigation Platform", version="3.0.0", lifespan=lifespan)
 
 
 app.add_middleware(
@@ -519,6 +531,69 @@ def export_digest_pdf_endpoint(digest_id: int):
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@app.get("/api/schedules")
+def list_schedules_endpoint():
+    """Saved digest schedules plus the Teams channels and clock settings the UI needs."""
+    return {
+        "schedules": scheduler.all_schedules(),
+        "teams_channels": teams.channel_names(),
+        "periods": scheduler.PERIODS,
+        "timezone": APP_TIMEZONE,
+        "scheduler_enabled": SCHEDULER_ENABLED,
+        "public_url_set": bool(PUBLIC_BASE_URL),
+    }
+
+
+@app.post("/api/schedules")
+def create_schedule_endpoint(req: Dict[str, Any]):
+    try:
+        return scheduler.create(req)
+    except scheduler.ScheduleError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.put("/api/schedules/{schedule_id}")
+def update_schedule_endpoint(schedule_id: int, req: Dict[str, Any]):
+    try:
+        return scheduler.update(schedule_id, req)
+    except scheduler.ScheduleError as e:
+        raise HTTPException(status_code=404 if "tidak ditemukan" in str(e) else 400, detail=str(e))
+
+
+@app.delete("/api/schedules/{schedule_id}")
+def delete_schedule_endpoint(schedule_id: int):
+    if not scheduler.remove(schedule_id):
+        raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan.")
+    return {"deleted": True}
+
+
+@app.post("/api/schedules/tick")
+def schedules_tick_endpoint(x_scheduler_token: Optional[str] = Header(None)):
+    """Runs due schedules. For hosts that sleep when idle: call from an external cron with X-Scheduler-Token."""
+    if not SCHEDULER_TRIGGER_TOKEN or not x_scheduler_token or not hmac.compare_digest(
+            x_scheduler_token.encode("utf-8"), SCHEDULER_TRIGGER_TOKEN.encode("utf-8")):
+        raise HTTPException(status_code=403, detail="Token scheduler tidak valid atau SCHEDULER_TRIGGER_TOKEN belum diset.")
+    return {"ran": scheduler.run_due()}
+
+
+@app.post("/api/schedules/{schedule_id}/run")
+def run_schedule_endpoint(schedule_id: int):
+    """Runs one schedule now (does not change its next run time)."""
+    try:
+        return scheduler.run_now(schedule_id)
+    except scheduler.ScheduleError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/teams/test")
+def teams_test_endpoint(req: Dict[str, Any]):
+    try:
+        teams.post_card(str(req.get("channel", "")), teams.test_card())
+    except teams.TeamsError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"sent": True}
 
 
 @app.get("/api/watchlist")

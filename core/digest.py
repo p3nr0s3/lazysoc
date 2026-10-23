@@ -9,7 +9,9 @@ local watchlist correlation (products, owners) afterwards - the model only ever 
 import re
 from datetime import date, datetime, time as dtime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from core.config import APP_TIMEZONE
 from core.cve import fetch_kev_catalog
 from core.database import get_feed_articles_between, save_digest
 from core.feed import refresh_feed_store
@@ -79,7 +81,11 @@ class DigestError(ValueError):
 
 
 def _local_tz():
-    return datetime.now().astimezone().tzinfo
+    """The configured calendar timezone (APP_TIMEZONE), falling back to the server's own."""
+    try:
+        return ZoneInfo(APP_TIMEZONE)
+    except (ZoneInfoNotFoundError, ValueError):
+        return datetime.now().astimezone().tzinfo
 
 
 def _to_utc_str(dt: datetime) -> str:

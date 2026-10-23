@@ -85,6 +85,23 @@ def init_db():
 
         cursor.execute(
             """
+            CREATE TABLE IF NOT EXISTS digest_schedules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                config_json TEXT NOT NULL,
+                next_run_at TEXT,
+                last_run_at TEXT,
+                last_status TEXT,
+                last_message TEXT,
+                last_digest_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS digests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -375,6 +392,81 @@ def get_feed_article(link: str) -> Optional[Dict[str, Any]]:
         cursor.execute("SELECT * FROM feed_articles WHERE link = ?", (link,))
         row = cursor.fetchone()
         return dict(row) if row else None
+
+
+def _schedule_row(row) -> Dict[str, Any]:
+    data = dict(row)
+    data.update(json.loads(data.pop("config_json")))
+    data["enabled"] = bool(data["enabled"])
+    return data
+
+
+def list_schedules() -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM digest_schedules ORDER BY id")
+        return [_schedule_row(r) for r in cursor.fetchall()]
+
+
+def get_schedule(schedule_id: int) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM digest_schedules WHERE id = ?", (schedule_id,))
+        row = cursor.fetchone()
+        return _schedule_row(row) if row else None
+
+
+def insert_schedule(name: str, enabled: bool, config: Dict[str, Any], next_run_at: Optional[str]) -> int:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO digest_schedules (name, enabled, config_json, next_run_at) VALUES (?, ?, ?, ?)",
+            (name, 1 if enabled else 0, json.dumps(config), next_run_at),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def update_schedule(schedule_id: int, name: str, enabled: bool, config: Dict[str, Any], next_run_at: Optional[str]) -> bool:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE digest_schedules SET name = ?, enabled = ?, config_json = ?, next_run_at = ? WHERE id = ?",
+            (name, 1 if enabled else 0, json.dumps(config), next_run_at, schedule_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def delete_schedule(schedule_id: int) -> bool:
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM digest_schedules WHERE id = ?", (schedule_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def claim_schedule_run(schedule_id: int, expected_next_run: str, new_next_run: Optional[str]) -> bool:
+    """Atomically moves next_run_at forward; only the caller that succeeds runs the schedule."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE digest_schedules SET next_run_at = ? WHERE id = ? AND next_run_at = ? AND enabled = 1",
+            (new_next_run, schedule_id, expected_next_run),
+        )
+        conn.commit()
+        return cursor.rowcount == 1
+
+
+def record_schedule_result(schedule_id: int, status: str, message: str, digest_id: Optional[int]):
+    now_str = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE digest_schedules SET last_run_at = ?, last_status = ?, last_message = ?, last_digest_id = COALESCE(?, last_digest_id) WHERE id = ?",
+            (now_str, status, message[:500], digest_id, schedule_id),
+        )
+        conn.commit()
 
 
 def save_digest(digest: Dict[str, Any]) -> int:
