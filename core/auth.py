@@ -17,7 +17,8 @@ from starlette.responses import Response
 
 import core.config as config
 
-PUBLIC_PATHS = {"/healthz"}
+# /api/schedules/tick is checked against its own SCHEDULER_TRIGGER_TOKEN, so external cron jobs can call it.
+PUBLIC_PATHS = {"/healthz", "/api/schedules/tick"}
 
 
 def auth_enabled() -> bool:

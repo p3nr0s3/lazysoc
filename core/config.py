@@ -46,6 +46,21 @@ AUTH_USER = os.getenv("LAZYSOC_AUTH_USER", "")
 AUTH_PASSWORD = os.getenv("LAZYSOC_AUTH_PASSWORD", "")
 AUTH_PASSWORD_SHA256 = os.getenv("LAZYSOC_AUTH_PASSWORD_SHA256", "").strip().lower()
 
+# Calendar timezone for digest periods and schedules (servers such as Render run in UTC).
+APP_TIMEZONE = os.getenv("APP_TIMEZONE", "Asia/Jakarta")
+
+# Digest scheduler. Runs inside the server; on hosts that sleep when idle, call POST /api/schedules/tick
+# from an external cron with the X-Scheduler-Token header instead.
+SCHEDULER_ENABLED = os.getenv("SCHEDULER_ENABLED", "true").lower() in ("true", "1", "yes")
+SCHEDULER_TRIGGER_TOKEN = os.getenv("SCHEDULER_TRIGGER_TOKEN", "")
+
+# Microsoft Teams delivery via Workflows webhooks. Secret URLs live only in the environment:
+# TEAMS_WEBHOOK_URL (channel "default") and/or TEAMS_WEBHOOKS="soc=https://...;customer-a=https://..."
+TEAMS_WEBHOOK_URL = os.getenv("TEAMS_WEBHOOK_URL", "")
+TEAMS_WEBHOOKS = os.getenv("TEAMS_WEBHOOKS", "")
+# Public base URL of this LazySOC instance, used for the "Buka PDF" button in Teams cards.
+PUBLIC_BASE_URL = os.getenv("LAZYSOC_PUBLIC_URL", "").rstrip("/")
+
 # Critical tools watchlist (internal + customer inventory). Kept under data/ so it is never committed.
 WATCHLIST_FILE = Path(os.getenv("WATCHLIST_FILE", str(DATA_DIR / "watchlist.json")))
 
