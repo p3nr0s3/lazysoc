@@ -195,9 +195,12 @@ def analyze_mitre_coverage(iocs: List[Dict[str, Any]], active_playbook_id: Optio
         "web_exploit": ["T1190", "T1505", "T1059"],
     }
 
-    if active_playbook_id and active_playbook_id in playbook_tech_map:
-        for t in playbook_tech_map[active_playbook_id]:
-            highlighted_techniques.add(t)
+    if active_playbook_id:
+        norm_pb = active_playbook_id.lower().replace('pb-', '').replace('pb_', '')
+        target_pb = norm_pb if norm_pb in playbook_tech_map else active_playbook_id
+        if target_pb in playbook_tech_map:
+            for t in playbook_tech_map[target_pb]:
+                highlighted_techniques.add(t)
 
     covered_details = []
     for tid in highlighted_techniques:

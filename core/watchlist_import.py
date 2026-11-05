@@ -361,3 +361,265 @@ def export_watchlist_xlsx(watchlist_assets: List[Dict[str, Any]]) -> bytes:
                 ";".join(asset.get("aliases", []) or []), ";".join(asset.get("cpe", []) or []), kev,
             ])
     return _xlsx_bytes(rows, "Watchlist")
+
+
+# ------------------------------------------------------------------------------
+# Item-by-item Watchlist CRUD & Popular Defaults
+# ------------------------------------------------------------------------------
+
+DEFAULT_POPULAR_ASSETS = [
+    {
+        "id": "fortinet-fortios",
+        "vendor": "Fortinet",
+        "product": "FortiOS / FortiGate",
+        "category": "Firewall / Gateway",
+        "criticality": "critical",
+        "aliases": ["FortiOS", "FortiGate"],
+        "vendor_aliases": ["Fortinet"],
+        "kev": [{"vendor": "Fortinet", "product": "FortiOS"}],
+        "cpe": ["fortinet:fortios"],
+        "deployments": [
+            {"owner": "Internal Enterprise", "version": "7.4.3", "note": "Edge Perimeter Firewall primary"}
+        ]
+    },
+    {
+        "id": "paloalto-panos",
+        "vendor": "Palo Alto Networks",
+        "product": "PAN-OS / GlobalProtect",
+        "category": "Next-Gen Firewall / VPN",
+        "criticality": "critical",
+        "aliases": ["PAN-OS", "GlobalProtect", "Palo Alto"],
+        "vendor_aliases": ["Palo Alto Networks"],
+        "kev": [{"vendor": "Palo Alto Networks", "product": "PAN-OS"}],
+        "cpe": ["paloaltonetworks:pan-os"],
+        "deployments": [
+            {"owner": "Internal Enterprise", "version": "11.1.2", "note": "HQ GlobalProtect Gateway"}
+        ]
+    },
+    {
+        "id": "microsoft-exchange",
+        "vendor": "Microsoft",
+        "product": "Exchange Server",
+        "category": "Mail & Collaboration",
+        "criticality": "critical",
+        "aliases": ["Exchange Server", "MS Exchange", "Exchange 2019"],
+        "vendor_aliases": ["Microsoft"],
+        "kev": [{"vendor": "Microsoft", "product": "Exchange Server"}],
+        "cpe": ["microsoft:exchange_server"],
+        "deployments": [
+            {"owner": "Internal Enterprise", "version": "15.2.1258.12", "note": "On-prem Hybrid Mail Server (CU13)"}
+        ]
+    },
+    {
+        "id": "microsoft-windows-server",
+        "vendor": "Microsoft",
+        "product": "Windows Server / Active Directory",
+        "category": "Domain Controller / Identity",
+        "criticality": "critical",
+        "aliases": ["Windows Server", "Active Directory", "Domain Controller", "AD DS"],
+        "vendor_aliases": ["Microsoft"],
+        "kev": [{"vendor": "Microsoft", "product": "Windows Server"}],
+        "cpe": ["microsoft:windows_server_2022"],
+        "deployments": [
+            {"owner": "Internal Enterprise", "version": "2022", "note": "Primary Domain Controller (DC-01)"}
+        ]
+    },
+    {
+        "id": "vmware-esxi",
+        "vendor": "VMware / Broadcom",
+        "product": "VMware ESXi / vCenter",
+        "category": "Virtualization Hypervisor",
+        "criticality": "critical",
+        "aliases": ["ESXi", "vCenter", "vSphere", "VMware ESXi"],
+        "vendor_aliases": ["VMware", "Broadcom"],
+        "kev": [{"vendor": "VMware", "product": "ESXi"}],
+        "cpe": ["vmware:esxi"],
+        "deployments": [
+            {"owner": "Internal Enterprise", "version": "8.0.2", "note": "Datacenter Cluster Node 01"}
+        ]
+    },
+    {
+        "id": "cisco-ios-xe",
+        "vendor": "Cisco",
+        "product": "Cisco IOS XE",
+        "category": "Enterprise Router / Switch",
+        "criticality": "high",
+        "aliases": ["IOS XE", "Cisco IOS XE", "Catalyst"],
+        "vendor_aliases": ["Cisco"],
+        "kev": [{"vendor": "Cisco", "product": "IOS XE"}],
+        "cpe": ["cisco:ios_xe"],
+        "deployments": [
+            {"owner": "Internal Enterprise", "version": "17.9.4a", "note": "Core Distribution Switch"}
+        ]
+    },
+    {
+        "id": "ivanti-connect-secure",
+        "vendor": "Ivanti",
+        "product": "Connect Secure (ICS)",
+        "category": "SSL VPN Gateway",
+        "criticality": "critical",
+        "aliases": ["Ivanti Connect Secure", "Pulse Connect Secure", "ICS"],
+        "vendor_aliases": ["Ivanti"],
+        "kev": [{"vendor": "Ivanti", "product": "Connect Secure"}],
+        "cpe": ["ivanti:connect_secure"],
+        "deployments": [
+            {"owner": "Internal Enterprise", "version": "22.7.2", "note": "Remote Access SSL VPN"}
+        ]
+    },
+    {
+        "id": "apache-log4j",
+        "vendor": "Apache",
+        "product": "Log4j",
+        "category": "Logging Library",
+        "criticality": "high",
+        "aliases": ["Log4j", "Log4j2", "Log4Shell"],
+        "vendor_aliases": ["Apache"],
+        "kev": [{"vendor": "Apache", "product": "Log4j"}],
+        "cpe": ["apache:log4j"],
+        "deployments": [
+            {"owner": "Internal Enterprise", "version": "2.17.1", "note": "Backend Billing API App"}
+        ]
+    }
+]
+
+
+def get_catalog_products() -> List[Dict[str, Any]]:
+    """Returns curated product list from product catalog for UI dropdowns."""
+    catalog = load_catalog()
+    return [
+        {
+            "id": p.get("id"),
+            "product": p.get("product"),
+            "vendor": p.get("vendor"),
+            "category": p.get("category", "General"),
+            "criticality": p.get("criticality", "normal"),
+        }
+        for p in catalog if p.get("id")
+    ]
+
+
+def add_or_update_watchlist_item(
+    product_name: str,
+    vendor: str = "",
+    version: str = "",
+    owner: str = "Internal Enterprise",
+    criticality: str = "normal",
+    category: str = "",
+    note: str = ""
+) -> Dict[str, Any]:
+    """Adds a single item / deployment to data/watchlist.json, automatically enriching with catalog if matched."""
+    clean_product = product_name.strip()
+    if not clean_product:
+        raise WatchlistImportError("Nama produk tidak boleh kosong.")
+
+    clean_owner = owner.strip() or "Internal Enterprise"
+    clean_version = version.strip()
+    clean_note = note.strip()
+    clean_crit = criticality.strip().lower()
+    if clean_crit not in ("critical", "high", "normal"):
+        clean_crit = "normal"
+
+    catalog = load_catalog()
+    cat_match = match_catalog(clean_product, catalog)
+
+    current_data = read_current_watchlist()
+    assets = current_data.get("assets", [])
+
+    if cat_match:
+        asset_id = cat_match.get("id")
+        resolved_product = cat_match.get("product") or clean_product
+        resolved_vendor = vendor.strip() or cat_match.get("vendor", "")
+        resolved_category = category.strip() or cat_match.get("category", "")
+        aliases = cat_match.get("aliases", [clean_product])
+        vendor_aliases = cat_match.get("vendor_aliases", [resolved_vendor] if resolved_vendor else [])
+        cpe = cat_match.get("cpe", [])
+        kev = cat_match.get("kev", [])
+        final_crit = clean_crit if clean_crit != "normal" else (cat_match.get("criticality") or "normal")
+    else:
+        resolved_vendor = vendor.strip()
+        asset_id = re.sub(r"[^a-z0-9]+", "-", f"{resolved_vendor}-{clean_product}".lower()).strip("-") or "custom-tool"
+        resolved_product = clean_product
+        resolved_category = category.strip() or "General"
+        aliases = [clean_product]
+        vendor_aliases = [resolved_vendor] if resolved_vendor else []
+        cpe = []
+        kev = []
+        final_crit = clean_crit
+
+    # Check if this asset already exists in watchlist
+    existing_asset = next((a for a in assets if a.get("id") == asset_id), None)
+    if existing_asset:
+        # Check deployments
+        deps = existing_asset.get("deployments", [])
+        dep = next((d for d in deps if d.get("owner", "").lower() == clean_owner.lower()), None)
+        if dep:
+            if clean_version:
+                dep["version"] = clean_version
+            if clean_note:
+                dep["note"] = clean_note
+        else:
+            new_dep = {"owner": clean_owner}
+            if clean_version:
+                new_dep["version"] = clean_version
+            if clean_note:
+                new_dep["note"] = clean_note
+            deps.append(new_dep)
+        existing_asset["deployments"] = deps
+        if clean_crit != "normal":
+            existing_asset["criticality"] = clean_crit
+    else:
+        new_dep = {"owner": clean_owner}
+        if clean_version:
+            new_dep["version"] = clean_version
+        if clean_note:
+            new_dep["note"] = clean_note
+
+        new_asset = {
+            "id": asset_id,
+            "vendor": resolved_vendor,
+            "product": resolved_product,
+            "category": resolved_category,
+            "criticality": final_crit,
+            "aliases": aliases,
+            "vendor_aliases": vendor_aliases,
+            "kev": kev,
+            "cpe": cpe,
+            "deployments": [new_dep]
+        }
+        assets.append(new_asset)
+
+    current_data["assets"] = assets
+    backup = save_watchlist(current_data)
+    return {"success": True, "asset_id": asset_id, "backup": backup, "total_assets": len(assets)}
+
+
+def delete_watchlist_item(asset_id: str, owner: Optional[str] = None) -> Dict[str, Any]:
+    """Deletes an asset or a specific owner's deployment from watchlist.json."""
+    current_data = read_current_watchlist()
+    assets = current_data.get("assets", [])
+
+    if not owner:
+        # Remove entire asset
+        assets = [a for a in assets if a.get("id") != asset_id]
+    else:
+        # Remove deployment for this owner
+        for a in assets:
+            if a.get("id") == asset_id:
+                a["deployments"] = [d for d in a.get("deployments", []) if d.get("owner", "").lower() != owner.lower()]
+        # Filter out assets with no deployments
+        assets = [a for a in assets if a.get("deployments")]
+
+    current_data["assets"] = assets
+    backup = save_watchlist(current_data)
+    return {"success": True, "backup": backup, "total_assets": len(assets)}
+
+
+def seed_default_watchlist() -> Dict[str, Any]:
+    """Seeds default popular enterprise products into data/watchlist.json."""
+    data = {
+        "version": 1,
+        "source": "LazySOC Popular Enterprise Critical Tools Default Seed",
+        "assets": DEFAULT_POPULAR_ASSETS
+    }
+    backup = save_watchlist(data)
+    return {"success": True, "seeded_count": len(DEFAULT_POPULAR_ASSETS), "backup": backup}
