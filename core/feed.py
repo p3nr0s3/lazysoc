@@ -37,6 +37,26 @@ FEED_SOURCES = {
         "url": "https://krebsonsecurity.com/feed/",
         "badge_color": "purple",
     },
+    "darkreading": {
+        "name": "Dark Reading",
+        "url": "https://www.darkreading.com/rss.xml",
+        "badge_color": "rose",
+    },
+    "sans_isc": {
+        "name": "SANS ISC InfoSec",
+        "url": "https://isc.sans.edu/rssfeed.xml",
+        "badge_color": "indigo",
+    },
+    "unit42": {
+        "name": "Palo Alto Unit 42",
+        "url": "https://unit42.paloaltonetworks.com/feed/",
+        "badge_color": "orange",
+    },
+    "microsoft": {
+        "name": "Microsoft Security",
+        "url": "https://www.microsoft.com/en-us/security/blog/feed/",
+        "badge_color": "sky",
+    },
 }
 
 CACHE_TTL_SECONDS = 300  # 5 minutes cache
@@ -150,7 +170,7 @@ def _get_all_articles() -> List[Dict[str, Any]]:
         all_items.extend(fetch_single_feed(sk, meta))
 
     if all_items:
-        all_items.sort(key=lambda a: a.get("published_at") or "", reverse=True)
+        all_items.sort(key=lambda a: a.get("published_at") or a.get("pub_date") or "", reverse=True)
         _FEED_CACHE["timestamp"] = now
         _FEED_CACHE["items"] = all_items
         try:
@@ -197,7 +217,10 @@ def get_cyber_news(source: str = "all", limit: int = 30, owner: Optional[str] = 
     annotated = [_annotate(a, owner) for a in filtered]
     if watchlist_only or owner:
         annotated = [a for a in annotated if a["watchlist_matches"]]
-        annotated.sort(key=lambda a: a["watchlist_priority"], reverse=True)
+        annotated.sort(key=lambda a: (a["watchlist_priority"], a.get("published_at") or a.get("pub_date") or ""), reverse=True)
+    else:
+        # Guarantee strictly latest articles first
+        annotated.sort(key=lambda a: a.get("published_at") or a.get("pub_date") or "", reverse=True)
 
     return {
         "total": len(annotated[:limit]),

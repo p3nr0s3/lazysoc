@@ -11,7 +11,7 @@ from typing import List, Optional, Dict, Any
 from pathlib import Path
 import json
 
-from core.config import BASE_DIR, CACHE_TTL_HOURS, CORS_ALLOWED_ORIGINS
+from core.config import BASE_DIR, CACHE_TTL_HOURS, CORS_ALLOWED_ORIGINS, STATIC_DIR
 from core.parser import parse_raw_text, parse_uploaded_file, IoCItem
 from core.key_manager import (
     KeyManager,
@@ -48,7 +48,23 @@ from core.watchlist_import import (
     read_current_watchlist,
     template_xlsx,
     export_watchlist_xlsx,
+    get_catalog_products,
+    add_or_update_watchlist_item,
+    delete_watchlist_item,
+    seed_default_watchlist,
 )
+from core.darkweb import (
+    get_paginated_ransomware_victims,
+    get_darkweb_overview,
+    fetch_live_ransomware_victims,
+    get_ransomware_groups_list,
+    get_darkweb_iocs_list,
+)
+from core.credential_leak import (
+    analyze_domain_darkweb_exposure,
+    check_password_pwned_k_anonymity,
+)
+from core.script_scanner import scan_script_payload
 from core.ai_summary import summarize_article
 from core.llm import provider_status
 from core.digest import DigestError, preview_digest, generate_digest, enrich_digest
@@ -56,6 +72,24 @@ from core.database import get_digest, list_digests
 from core.pdf_export import digest_pdf
 from core.config import ALLOW_WATCHLIST_UPLOAD
 from core.auth import BasicAuthMiddleware
+from core.security import (
+    authenticate_web_user,
+    validate_web_session,
+    terminate_web_session,
+    load_security_settings,
+    save_security_settings,
+    record_audit_log,
+    get_audit_trail,
+    list_analyst_users,
+    create_analyst_user,
+    delete_analyst_user,
+    update_analyst_password,
+    update_analyst_role,
+)
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+
 from core.playbooks import get_all_playbooks, get_playbook, generate_playbook_report
 from core.url_tracer import trace_url_redirects
 from core.deobfuscator import deobfuscate_payload
@@ -75,6 +109,17 @@ from core.soc_analyst import (
 app = FastAPI(title="LazySOC Threat Triage & Investigation Platform", version="3.0.0")
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOWED_ORIGINS,
@@ -84,6 +129,7 @@ app.add_middleware(
 )
 # Added last so it runs first: no route is reachable without the login when auth is enabled.
 app.add_middleware(BasicAuthMiddleware)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 km = KeyManager()
 engine = EnrichmentEngine(km)
@@ -226,6 +272,25 @@ class DigestRequest(BaseModel):
     mode: str = "critical"
     provider: Optional[str] = None
     query: Optional[str] = ""
+
+
+class WatchlistItemRequest(BaseModel):
+    product: str
+    vendor: Optional[str] = ""
+    version: Optional[str] = ""
+    owner: Optional[str] = "Internal Enterprise"
+    criticality: Optional[str] = "normal"
+    category: Optional[str] = ""
+    note: Optional[str] = ""
+
+
+class WatchlistDeleteItemRequest(BaseModel):
+    asset_id: str
+    owner: Optional[str] = None
+
+
+class ScriptScanRequest(BaseModel):
+    payload: str
 
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 MAX_WATCHLIST_UPLOAD = 5 * 1024 * 1024
@@ -527,6 +592,100 @@ def get_watchlist_endpoint():
     return get_watchlist_summary()
 
 
+@app.get("/api/watchlist/catalog")
+def get_watchlist_catalog_endpoint():
+    """Returns popular product catalog templates for quick addition."""
+    return {"catalog": get_catalog_products()}
+
+
+@app.post("/api/watchlist/item")
+def add_watchlist_item_endpoint(req: WatchlistItemRequest):
+    """Adds or updates an individual product/deployment in the watchlist."""
+    try:
+        res = add_or_update_watchlist_item(
+            product_name=req.product,
+            vendor=req.vendor or "",
+            version=req.version or "",
+            owner=req.owner or "Internal Enterprise",
+            criticality=req.criticality or "normal",
+            category=req.category or "",
+            note=req.note or ""
+        )
+        return res
+    except WatchlistImportError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.delete("/api/watchlist/item")
+def delete_watchlist_item_endpoint(req: WatchlistDeleteItemRequest):
+    """Deletes an asset or a specific deployment from the watchlist."""
+    return delete_watchlist_item(asset_id=req.asset_id, owner=req.owner)
+
+
+@app.post("/api/watchlist/defaults")
+def seed_watchlist_defaults_endpoint():
+    """Seeds standard enterprise critical tools into the watchlist."""
+    return seed_default_watchlist()
+
+
+# ==============================================================================
+# DARKWEB & RANSOMWARE THREAT INTELLIGENCE
+# ==============================================================================
+
+@app.get("/api/darkweb/overview")
+def get_darkweb_overview_endpoint():
+    """Returns active ransomware group metrics, targeted sectors, and threat condition."""
+    return get_darkweb_overview()
+
+
+@app.get("/api/darkweb/victims")
+def get_darkweb_victims_endpoint(page: int = 1, limit: int = 20, q: Optional[str] = None):
+    """Returns real-time victim disclosures from ransomware leak sites with full pagination and search."""
+    return get_paginated_ransomware_victims(page=page, limit=max(1, min(limit, 100)), query=q)
+
+
+@app.get("/api/darkweb/groups")
+def get_darkweb_groups_endpoint():
+    """Returns tactical profiles of top ransomware cartels."""
+    return {"groups": get_ransomware_groups_list()}
+
+
+@app.get("/api/darkweb/iocs")
+def get_darkweb_iocs_endpoint():
+    """Returns high-fidelity darkweb & ransomware IoCs ready for triage pivoting."""
+    return {"iocs": get_darkweb_iocs_list()}
+
+
+class DarkwebDomainRequest(BaseModel):
+    domain: str
+
+
+class PasswordPwnedRequest(BaseModel):
+    password: str
+
+
+@app.post("/api/darkweb/domain")
+def query_darkweb_domain_endpoint(req: DarkwebDomainRequest):
+    """Performs darkweb ransomware leak surveillance and credential stealer log recon for a domain."""
+    return analyze_domain_darkweb_exposure(req.domain)
+
+
+@app.post("/api/darkweb/password-pwned")
+def check_password_pwned_endpoint(req: PasswordPwnedRequest):
+    """Checks if a password or hash exists in public compromised breach dumps via k-anonymity."""
+    return check_password_pwned_k_anonymity(req.password)
+
+
+# ==============================================================================
+# INVESTIGATION & TRIAGE: SCRIPT & WEBSHELL SCANNER
+# ==============================================================================
+
+@app.post("/api/investigate/script-scan")
+def scan_script_endpoint(req: ScriptScanRequest):
+    """Inspects suspicious scripts, web shells, and reverse shell one-liners."""
+    return scan_script_payload(req.payload)
+
+
 @app.post("/api/watchlist/upload")
 async def upload_watchlist_endpoint(file: UploadFile = File(...), apply: bool = Form(False)):
     """Parses an uploaded critical tools list (.xlsx/.csv/.json). apply=false previews, apply=true replaces the watchlist."""
@@ -773,6 +932,202 @@ def soc_malwarebazaar_endpoint(req: MalwareBazaarRequest):
     """Queries abuse.ch MalwareBazaar for sample metadata, signatures, and tags."""
     return engine.malwarebazaar_client.check_hash(req.hash)
 
+
+
+# ==============================================================================
+# WEB AUTHENTICATION, SETTINGS, & SECURITY AUDIT ENDPOINTS
+# ==============================================================================
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    role: Optional[str] = "Tier-2 SOC"
+
+
+class SettingsUpdateRequest(BaseModel):
+    require_web_login: Optional[bool] = None
+    air_gap_mode: Optional[bool] = None
+    session_timeout_minutes: Optional[int] = None
+
+
+@app.post("/api/auth/login")
+def api_login(req: LoginRequest, request: Request):
+    """Authenticates analyst for web session with rate-limiting and audit logging."""
+    ip = request.client.host if request.client else "127.0.0.1"
+    res = authenticate_web_user(req.username, req.password, req.role, ip)
+    if not res.get("success"):
+        status_code = 429 if res.get("locked") else 401
+        raise HTTPException(status_code=status_code, detail=res.get("error"))
+    return res
+
+
+@app.post("/api/auth/logout")
+def api_logout(request: Request):
+    """Terminates the analyst web session."""
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1]
+    ok = terminate_web_session(token)
+    return {"success": ok}
+
+
+@app.get("/api/auth/session")
+def api_session(request: Request):
+    """Checks validity of analyst session token."""
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1]
+    sess = validate_web_session(token)
+    if sess:
+        return {
+            "authenticated": True,
+            "analyst": {
+                "username": sess["username"],
+                "role": sess["role"],
+                "created_at": sess["created_at"],
+            },
+        }
+    return {
+        "authenticated": False,
+        "analyst": {
+            "username": "admin",
+            "role": "Tier-2 SOC",
+        },
+    }
+
+
+@app.get("/api/settings")
+def api_get_settings():
+    """Returns active security settings, API key status, and security headers."""
+    settings = load_security_settings()
+    pools = km.get_pool_counts()
+    headers_info = {
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    }
+    return {
+        "settings": settings,
+        "api_pools": pools,
+        "security_headers": headers_info,
+        "platform_version": "v3.0.0",
+    }
+
+
+@app.post("/api/settings")
+def api_update_settings(req: SettingsUpdateRequest):
+    """Updates runtime security settings."""
+    current = load_security_settings()
+    updates = {k: v for k, v in req.model_dump().items() if v is not None}
+    current.update(updates)
+    save_security_settings(current)
+    record_audit_log("SETTINGS_UPDATED", "admin", f"Updated settings: {list(updates.keys())}")
+    return {"success": True, "settings": current}
+
+
+@app.get("/api/audit-logs")
+def api_get_audit_logs(limit: int = 50):
+    """Returns recent security audit logs."""
+    return {"logs": get_audit_trail(limit=max(1, min(limit, 200)))}
+
+
+@app.post("/api/cache/flush")
+def api_flush_cache():
+    """Purges all cached threat intelligence records."""
+    count = clear_cache()
+    record_audit_log("CACHE_CLEARED", "admin", f"Purged {count} cached threat records")
+    return {"success": True, "purged_count": count}
+
+
+# ==============================================================================
+# USER MANAGEMENT ENDPOINTS (CREATE / LIST / DELETE / UPDATE ANALYSTS)
+# ==============================================================================
+
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    role: Optional[str] = "Tier-2 SOC"
+    full_name: Optional[str] = None
+
+
+class UpdatePasswordRequest(BaseModel):
+    password: str
+
+
+class UpdateRoleRequest(BaseModel):
+    role: str
+
+
+@app.get("/api/users")
+def get_users_endpoint():
+    """Returns all registered analyst accounts."""
+    return {"users": list_analyst_users()}
+
+
+@app.post("/api/users")
+def create_user_endpoint(req: CreateUserRequest, request: Request):
+    """Registers a new analyst user with PBKDF2 encryption."""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.split(" ", 1)[1] if auth_header.startswith("Bearer ") else None
+    sess = validate_web_session(token)
+    requester = sess["username"] if sess else "admin"
+
+    ok, msg = create_analyst_user(
+        username=req.username,
+        password=req.password,
+        role=req.role or "Tier-2 SOC",
+        full_name=req.full_name,
+        requester=requester
+    )
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"success": True, "message": msg}
+
+
+@app.delete("/api/users/{username}")
+def delete_user_endpoint(username: str, request: Request):
+    """Deletes an analyst account."""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.split(" ", 1)[1] if auth_header.startswith("Bearer ") else None
+    sess = validate_web_session(token)
+    requester = sess["username"] if sess else "admin"
+
+    ok, msg = delete_analyst_user(username=username, requester=requester)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"success": True, "message": msg}
+
+
+@app.put("/api/users/{username}/password")
+def update_user_password_endpoint(username: str, req: UpdatePasswordRequest, request: Request):
+    """Updates password for an analyst account."""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.split(" ", 1)[1] if auth_header.startswith("Bearer ") else None
+    sess = validate_web_session(token)
+    requester = sess["username"] if sess else "admin"
+
+    ok, msg = update_analyst_password(username=username, new_password=req.password, requester=requester)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"success": True, "message": msg}
+
+
+@app.put("/api/users/{username}/role")
+def update_user_role_endpoint(username: str, req: UpdateRoleRequest, request: Request):
+    """Updates role permissions for an analyst."""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.split(" ", 1)[1] if auth_header.startswith("Bearer ") else None
+    sess = validate_web_session(token)
+    requester = sess["username"] if sess else "admin"
+
+    ok, msg = update_analyst_role(username=username, new_role=req.role, requester=requester)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"success": True, "message": msg}
 
 @app.get("/", response_class=HTMLResponse)
 

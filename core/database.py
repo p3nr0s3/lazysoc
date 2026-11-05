@@ -111,7 +111,28 @@ def init_db():
             )
             """
         )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL,
+                salt TEXT NOT NULL,
+                role TEXT NOT NULL,
+                full_name TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP,
+                is_active INTEGER DEFAULT 1
+            )
+            """
+        )
         conn.commit()
+
+    try:
+        from core.security import bootstrap_initial_users
+        bootstrap_initial_users()
+    except Exception:
+        pass
 
 
 # Initialize on import

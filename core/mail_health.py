@@ -18,11 +18,12 @@ _SPF_ALL = re.compile(r"^([+\-~?]?)all$", re.IGNORECASE)
 class MailHealthChecker:
     """Evaluates MX, SPF, and DMARC configurations to assess email spoofability."""
 
-    def __init__(self, timeout: float = 3.0, resolver: Optional[Any] = None):
+    def __init__(self, timeout: float = 4.0, resolver: Optional[Any] = None):
         if resolver is None:
             resolver = dns.resolver.Resolver()
             resolver.timeout = timeout
             resolver.lifetime = timeout
+            resolver.nameservers = ['1.1.1.1', '8.8.8.8', '8.8.4.4', '1.0.0.1']
             # Without EDNS, large TXT answers (google.com, github.com, ...) come back
             # truncated and need a TCP retry, which many hosts/firewalls drop.
             resolver.use_edns(0, 0, 1232)

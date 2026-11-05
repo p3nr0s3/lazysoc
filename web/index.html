@@ -140,9 +140,9 @@
       box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
     }
 
-    /* Collapsible Sidebar States */
+    /* Collapsible Sidebar States & Slide / Hover Dynamics */
     #app-sidebar {
-      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease-in-out;
+      transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease-in-out, box-shadow 0.28s ease;
     }
     #app-sidebar.sidebar-collapsed {
       width: 4.75rem !important;
@@ -185,6 +185,83 @@
       padding-right: 0.5rem !important;
       justify-content: center !important;
     }
+
+    /* Auto-Slide Expand on Hover (Desktop) */
+    @media (min-width: 1024px) {
+      #app-sidebar.sidebar-collapsed:hover {
+        width: 16rem !important;
+        min-width: 16rem !important;
+        box-shadow: 12px 0 36px rgba(0, 0, 0, 0.85) !important;
+        z-index: 60 !important;
+      }
+      #app-sidebar.sidebar-collapsed:hover .sidebar-label,
+      #app-sidebar.sidebar-collapsed:hover .sidebar-full-logo,
+      #app-sidebar.sidebar-collapsed:hover .sidebar-footer-text,
+      #app-sidebar.sidebar-collapsed:hover .sidebar-desc {
+        display: inline !important;
+      }
+      #app-sidebar.sidebar-collapsed:hover .sidebar-group-title {
+        opacity: 1 !important;
+        height: auto !important;
+        margin: 6px 0 !important;
+        border-bottom: none !important;
+        padding: 0.25rem 0.625rem !important;
+      }
+      #app-sidebar.sidebar-collapsed:hover .tab-btn {
+        justify-content: flex-start !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+      }
+      #app-sidebar.sidebar-collapsed:hover #sidebar-brand-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        justify-content: space-between !important;
+      }
+      #app-sidebar.sidebar-collapsed:hover #sidebar-footer-actions {
+        flex-direction: row !important;
+        gap: 0.5rem !important;
+      }
+      #app-sidebar.sidebar-collapsed:hover #pool-status-indicator {
+        justify-content: flex-start !important;
+        padding: 0.5rem 0.75rem !important;
+      }
+      #app-sidebar.sidebar-collapsed:hover #sidebar-slide-handle {
+        transform: translateY(-50%) rotate(180deg);
+      }
+    }
+    /* Standardized Proportional Button Styles (Anti-Overlap) */
+    .btn-cyber {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.375rem !important;
+      padding: 0.375rem 0.75rem !important;
+      border-radius: 0.75rem !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      line-height: 1rem !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+      transition: all 0.15s ease-in-out !important;
+      user-select: none !important;
+    }
+    .btn-cyber-sm {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.25rem !important;
+      padding: 0.25rem 0.625rem !important;
+      border-radius: 0.5rem !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+      font-size: 0.6875rem !important;
+      font-weight: 600 !important;
+      line-height: 0.875rem !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+      transition: all 0.15s ease-in-out !important;
+      user-select: none !important;
+    }
   </style>
 </head>
 <body class="min-h-screen flex antialiased custom-scrollbar bg-cyber-bg text-[#f1f5f9] overflow-x-hidden">
@@ -195,7 +272,12 @@
   <!-- ============================================================
        SIDEBAR NAVIGATION (Sleek Cyberpunk Console Dock)
        ============================================================ -->
-  <aside id="app-sidebar" class="fixed lg:sticky top-0 inset-y-0 left-0 z-50 w-64 h-screen bg-[#070b14]/95 border-r border-cyber-border flex flex-col justify-between transition-all duration-300 ease-in-out -translate-x-full lg:translate-x-0 flex-shrink-0 select-none shadow-2xl lg:shadow-none backdrop-blur-md">
+  <aside id="app-sidebar" class="fixed lg:sticky top-0 inset-y-0 left-0 z-50 w-64 h-screen bg-[#070b14]/95 border-r border-cyber-border flex flex-col justify-between transition-all duration-300 ease-in-out -translate-x-full lg:translate-x-0 flex-shrink-0 select-none shadow-2xl lg:shadow-none backdrop-blur-md relative group">
+    
+    <!-- SLIDE HANDLE (DRAG & CLICK AFFORDANCE) -->
+    <div id="sidebar-slide-handle" class="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-14 rounded-r-xl bg-[#090e1a]/95 border-r border-t border-b border-cyber-border hover:border-cyber-cyan/70 items-center justify-center cursor-ew-resize text-slate-400 hover:text-cyber-cyan transition-all shadow-xl group z-50 select-none" title="Slide / Swipe Sidebar">
+      <i data-lucide="chevrons-left" id="sidebar-slide-icon" class="w-4 h-4 transition-transform group-hover:scale-125"></i>
+    </div>
     
     <!-- BRAND / LOGO HEADER -->
     <div id="sidebar-brand-container" class="h-16 px-4 border-b border-cyber-border flex items-center justify-between flex-shrink-0 bg-[#080d1a]/80">
@@ -219,80 +301,126 @@
     </div>
 
     <!-- SCROLLABLE NAVIGATION LINKS -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
       
       <!-- GROUP 1: INVESTIGATION & TRIAGE -->
       <div class="space-y-1">
-        <div class="sidebar-group-title px-3 py-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">
-          Investigation & Triage
+        <button onclick="toggleSidebarGroup('group-investigation')" class="w-full flex items-center justify-between px-2.5 py-1.5 text-[10px] font-mono font-bold text-slate-400 hover:text-white uppercase tracking-wider transition rounded-lg hover:bg-white/5">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="crosshair" class="w-3.5 h-3.5 text-cyber-cyan flex-shrink-0"></i>
+            <span class="sidebar-label font-bold">INVESTIGATION & TRIAGE</span>
+          </span>
+          <i data-lucide="chevron-down" id="chevron-group-investigation" class="w-3.5 h-3.5 transition-transform duration-200" style="transform: rotate(-90deg)"></i>
+        </button>
+        <div id="group-investigation" class="hidden space-y-1 pl-1 transition-all duration-200">
+          <button onclick="switchTab('triage')" id="tab-btn-triage" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 glow-cyan text-left" title="IoC Threat Triage">
+            <i data-lucide="target" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">IOC TRIAGE</span>
+          </button>
+          <button onclick="switchTab('casecanvas')" id="tab-btn-casecanvas" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Incident Case Canvas & Evidence Timeline">
+            <i data-lucide="git-commit" class="w-4 h-4 flex-shrink-0 text-amber-400"></i>
+            <span class="sidebar-label">CASE TIMELINE</span>
+          </button>
+          <button onclick="switchTab('scriptscan')" id="tab-btn-scriptscan" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Suspicious Script & Web Shell Scanner">
+            <i data-lucide="file-code-2" class="w-4 h-4 flex-shrink-0 text-red-400"></i>
+            <span class="sidebar-label">SCRIPT & WEBSHELL</span>
+          </button>
+          <button onclick="switchTab('recon')" id="tab-btn-recon" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Network Reconnaissance">
+            <i data-lucide="radar" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">NETWORK RECON</span>
+          </button>
+          <button onclick="switchTab('eml')" id="tab-btn-eml" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Phishing EML & Headers Forensics">
+            <i data-lucide="mail-warning" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">PHISHING EML</span>
+          </button>
+          <button onclick="openPlaybookModal()" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 text-left" title="Incident Playbooks & Checklist">
+            <i data-lucide="book-open-check" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+            <span class="sidebar-label">SOC PLAYBOOKS</span>
+          </button>
+          <button onclick="switchTab('soctoolkit')" id="tab-btn-soctoolkit" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="L1 SOC Analyst Studio">
+            <i data-lucide="cpu" class="w-4 h-4 flex-shrink-0 text-cyber-cyan"></i>
+            <span class="sidebar-label">L1 SOC STUDIO</span>
+          </button>
         </div>
-        <button onclick="switchTab('triage')" id="tab-btn-triage" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 glow-cyan text-left" title="IoC Triage">
-          <i data-lucide="target" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">IoC Triage</span>
-        </button>
-        <button onclick="switchTab('recon')" id="tab-btn-recon" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Network Recon">
-          <i data-lucide="radar" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">Network Recon</span>
-        </button>
-        <button onclick="switchTab('eml')" id="tab-btn-eml" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Phishing EML">
-          <i data-lucide="mail-warning" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">Phishing EML</span>
-        </button>
-        <button onclick="openPlaybookModal()" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 text-left" title="Incident Playbooks & Checklist">
-          <i data-lucide="book-open-check" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
-          <span class="sidebar-label">SOC Playbooks</span>
-        </button>
-        <button onclick="switchTab('soctoolkit')" id="tab-btn-soctoolkit" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="L1 SOC Analyst Studio">
-          <i data-lucide="cpu" class="w-4 h-4 flex-shrink-0 text-cyber-cyan"></i>
-          <span class="sidebar-label">L1 SOC Studio</span>
-        </button>
       </div>
 
-
-      <!-- GROUP 2: DEEP ANALYSIS & FORENSICS -->
+      <!-- GROUP 2: ANALYSIS & REVERSE -->
       <div class="space-y-1">
-        <div class="sidebar-group-title px-3 py-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">
-          Analysis & Reverse
+        <button onclick="toggleSidebarGroup('group-analysis')" class="w-full flex items-center justify-between px-2.5 py-1.5 text-[10px] font-mono font-bold text-slate-400 hover:text-white uppercase tracking-wider transition rounded-lg hover:bg-white/5">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="microscope" class="w-3.5 h-3.5 text-purple-400 flex-shrink-0"></i>
+            <span class="sidebar-label font-bold">ANALYSIS & REVERSE</span>
+          </span>
+          <i data-lucide="chevron-down" id="chevron-group-analysis" class="w-3.5 h-3.5 transition-transform duration-200" style="transform: rotate(-90deg)"></i>
+        </button>
+        <div id="group-analysis" class="hidden space-y-1 pl-1 transition-all duration-200">
+          <button onclick="switchTab('urltrace')" id="tab-btn-urltrace" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="URL Tracer">
+            <i data-lucide="route" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">URL TRACER</span>
+          </button>
+          <button onclick="switchTab('deobf')" id="tab-btn-deobf" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="De-obfuscator">
+            <i data-lucide="binary" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">DE-OBFUSCATOR</span>
+          </button>
+          <button onclick="switchTab('mail')" id="tab-btn-mail" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Mail Health">
+            <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">MAIL HEALTH</span>
+          </button>
         </div>
-        <button onclick="switchTab('urltrace')" id="tab-btn-urltrace" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="URL Tracer">
-          <i data-lucide="route" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">URL Tracer</span>
-        </button>
-        <button onclick="switchTab('deobf')" id="tab-btn-deobf" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="De-obfuscator">
-          <i data-lucide="binary" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">De-obfuscator</span>
-        </button>
-        <button onclick="switchTab('mail')" id="tab-btn-mail" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Mail Health">
-          <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">Mail Health</span>
-        </button>
       </div>
 
       <!-- GROUP 3: THREAT INTELLIGENCE -->
       <div class="space-y-1">
-        <div class="sidebar-group-title px-3 py-1 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">
-          Threat Intelligence
+        <button onclick="toggleSidebarGroup('group-threatintel')" class="w-full flex items-center justify-between px-2.5 py-1.5 text-[10px] font-mono font-bold text-slate-400 hover:text-white uppercase tracking-wider transition rounded-lg hover:bg-white/5">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="globe-2" class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"></i>
+            <span class="sidebar-label font-bold">THREAT INTELLIGENCE</span>
+          </span>
+          <i data-lucide="chevron-down" id="chevron-group-threatintel" class="w-3.5 h-3.5 transition-transform duration-200" style="transform: rotate(-90deg)"></i>
+        </button>
+        <div id="group-threatintel" class="hidden space-y-1 pl-1 transition-all duration-200">
+          <button onclick="switchTab('feed')" id="tab-btn-feed" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Cyber Feeds">
+            <i data-lucide="rss" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">CYBER FEEDS</span>
+          </button>
+          <button onclick="switchTab('darkweb')" id="tab-btn-darkweb" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Darkweb & Ransomware Intelligence">
+            <i data-lucide="skull" class="w-4 h-4 flex-shrink-0 text-red-400"></i>
+            <span class="sidebar-label">DARKWEB MONITORING</span>
+          </button>
+          <button onclick="switchTab('cve')" id="tab-btn-cve" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="CVE / NVD">
+            <i data-lucide="shield-alert" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">CVE / NVD</span>
+          </button>
+          <button onclick="switchTab('mitre')" id="tab-btn-mitre" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="MITRE ATT&CK">
+            <i data-lucide="grid" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">MITRE ATT&CK</span>
+          </button>
+          <button onclick="switchTab('sanitize')" id="tab-btn-sanitize" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Defang Studio">
+            <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">DEFANG STUDIO</span>
+          </button>
+          <button onclick="switchTab('cache')" id="tab-btn-cache" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Cache & Logs">
+            <i data-lucide="database" class="w-4 h-4 flex-shrink-0"></i>
+            <span class="sidebar-label">CACHE & LOGS</span>
+          </button>
         </div>
-        <button onclick="switchTab('feed')" id="tab-btn-feed" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Cyber Feeds">
-          <i data-lucide="rss" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">Cyber Feeds</span>
+      </div>
+
+      <!-- GROUP 4: ASSETS & WATCHLIST -->
+      <div class="space-y-1">
+        <button onclick="toggleSidebarGroup('group-inventory')" class="w-full flex items-center justify-between px-2.5 py-1.5 text-[10px] font-mono font-bold text-slate-400 hover:text-white uppercase tracking-wider transition rounded-lg hover:bg-white/5">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400 flex-shrink-0"></i>
+            <span class="sidebar-label font-bold">ASSETS & WATCHLIST</span>
+          </span>
+          <i data-lucide="chevron-down" id="chevron-group-inventory" class="w-3.5 h-3.5 transition-transform duration-200" style="transform: rotate(-90deg)"></i>
         </button>
-        <button onclick="switchTab('cve')" id="tab-btn-cve" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="CVE / NVD">
-          <i data-lucide="shield-alert" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">CVE / NVD</span>
-        </button>
-        <button onclick="switchTab('mitre')" id="tab-btn-mitre" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="MITRE ATT&CK">
-          <i data-lucide="grid" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">MITRE ATT&CK</span>
-        </button>
-        <button onclick="switchTab('sanitize')" id="tab-btn-sanitize" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Defang Studio">
-          <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">Defang Studio</span>
-        </button>
-        <button onclick="switchTab('cache')" id="tab-btn-cache" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Cache & Logs">
-          <i data-lucide="database" class="w-4 h-4 flex-shrink-0"></i>
-          <span class="sidebar-label">Cache & Logs</span>
-        </button>
+        <div id="group-inventory" class="hidden space-y-1 pl-1 transition-all duration-200">
+          <button onclick="switchTab('watchlist')" id="tab-btn-watchlist" class="tab-btn w-full px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2.5 transition-all text-slate-400 hover:text-white hover:bg-white/5 text-left" title="Critical Tools Watchlist Manager">
+            <i data-lucide="list-checks" class="w-4 h-4 flex-shrink-0 text-amber-400"></i>
+            <span class="sidebar-label">WATCHLIST MANAGER</span>
+          </button>
+        </div>
       </div>
 
     </div>
@@ -328,37 +456,96 @@
   <div class="flex-1 flex flex-col min-w-0 min-h-screen">
 
     <!-- TOP NAVIGATION & STATUS BAR -->
-    <header class="h-16 py-2.5 px-4 sm:px-6 border-b border-cyber-border bg-[#090d16]/90 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between gap-3">
+    <header class="h-16 py-2.5 px-3 sm:px-6 border-b border-cyber-border bg-[#090d16]/95 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between gap-2 sm:gap-4 select-none">
       
       <div class="flex items-center gap-2.5 min-w-0">
         <!-- MOBILE SIDEBAR TOGGLE BUTTON -->
-        <button onclick="toggleSidebar(true)" class="lg:hidden p-2 rounded-lg bg-cyber-card border border-cyber-border text-slate-300 hover:text-white hover:border-cyber-cyan transition flex items-center justify-center" title="Open Navigation Menu">
+        <button onclick="toggleSidebar(true)" class="lg:hidden p-2 rounded-lg bg-cyber-card border border-cyber-border text-slate-300 hover:text-white hover:border-cyber-cyan transition flex items-center justify-center flex-shrink-0" title="Open Navigation Menu">
           <i data-lucide="menu" class="w-4 h-4 text-cyber-cyan"></i>
         </button>
 
         <!-- DESKTOP SIDEBAR MINIMIZE/RESTORE BUTTON -->
-        <button onclick="toggleSidebarMinimize()" id="desktop-sidebar-btn" class="hidden lg:flex p-2 rounded-lg bg-cyber-card border border-cyber-border text-slate-300 hover:text-white hover:border-cyber-cyan transition items-center justify-center" title="Minimize / Expand Sidebar">
+        <button onclick="toggleSidebarMinimize()" id="desktop-sidebar-btn" class="hidden lg:flex p-2 rounded-lg bg-cyber-card border border-cyber-border text-slate-300 hover:text-white hover:border-cyber-cyan transition items-center justify-center flex-shrink-0" title="Minimize / Expand Sidebar">
           <i data-lucide="panel-left-close" id="sidebar-toggle-icon" class="w-4 h-4 text-cyber-cyan"></i>
         </button>
 
         <!-- ACTIVE SECTION TITLE & BREADCRUMB -->
-        <div class="flex items-center gap-2 font-mono min-w-0 truncate">
-          <span class="text-slate-500 hidden sm:inline text-xs flex-shrink-0">Workbench /</span>
+        <div class="flex items-center gap-1.5 font-mono min-w-0 truncate">
+          <span class="text-slate-500 hidden sm:inline text-xs flex-shrink-0">LazySOC /</span>
           <span class="text-xs sm:text-sm font-bold text-white flex items-center gap-2 min-w-0 truncate">
             <span class="w-2 h-2 rounded-full bg-cyber-cyan animate-pulse flex-shrink-0"></span>
-            <span id="page-title-text" class="truncate">IoC Threat Triage</span>
+            <span id="page-title-text" class="truncate uppercase font-bold tracking-wide">IOC THREAT TRIAGE</span>
           </span>
         </div>
+
+        <!-- STANDARD WEBSITE TOP NAV LINKS -->
+        <nav class="hidden 2xl:flex items-center gap-1 ml-4 pl-4 border-l border-cyber-border/60 text-xs font-mono flex-shrink-0">
+          <button onclick="switchTab('triage')" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition font-bold whitespace-nowrap">
+            DASHBOARD
+          </button>
+          
+          <div class="relative group">
+            <button class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1 font-bold whitespace-nowrap">
+              INVESTIGATE <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+            </button>
+            <div class="hidden group-hover:block absolute left-0 mt-1 w-48 bg-cyber-card border border-cyber-border rounded-xl shadow-2xl p-1.5 space-y-0.5 z-50 backdrop-blur-md">
+              <button onclick="switchTab('triage')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="target" class="w-3.5 h-3.5 text-cyber-cyan"></i> IoC Triage</button>
+              <button onclick="switchTab('casecanvas')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="git-commit" class="w-3.5 h-3.5 text-amber-400"></i> Case Timeline</button>
+              <button onclick="switchTab('scriptscan')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="file-code-2" class="w-3.5 h-3.5 text-red-400"></i> Script Scanner</button>
+              <button onclick="switchTab('recon')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="radar" class="w-3.5 h-3.5 text-blue-400"></i> Network Recon</button>
+              <button onclick="switchTab('eml')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="mail-warning" class="w-3.5 h-3.5 text-amber-300"></i> Phishing EML</button>
+            </div>
+          </div>
+
+          <div class="relative group">
+            <button class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1 font-bold whitespace-nowrap">
+              INTELLIGENCE <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+            </button>
+            <div class="hidden group-hover:block absolute left-0 mt-1 w-52 bg-cyber-card border border-cyber-border rounded-xl shadow-2xl p-1.5 space-y-0.5 z-50 backdrop-blur-md">
+              <button onclick="switchTab('feed')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="rss" class="w-3.5 h-3.5 text-amber-400"></i> Cyber Feeds</button>
+              <button onclick="switchTab('darkweb')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="skull" class="w-3.5 h-3.5 text-red-400"></i> Darkweb & Ransomware</button>
+              <button onclick="switchTab('cve')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="shield-alert" class="w-3.5 h-3.5 text-orange-400"></i> Online CVE / NVD</button>
+              <button onclick="switchTab('watchlist')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2"><i data-lucide="list-checks" class="w-3.5 h-3.5 text-amber-300"></i> Watchlist Manager</button>
+            </div>
+          </div>
+
+          <button onclick="openDocsModal()" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition font-bold flex items-center gap-1 whitespace-nowrap">
+            <i data-lucide="book-open" class="w-3 h-3 text-cyber-cyan"></i> DOCS
+          </button>
+          <button onclick="openSystemHealthModal()" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition font-bold flex items-center gap-1 whitespace-nowrap">
+            <i data-lucide="activity" class="w-3 h-3 text-emerald-400"></i> STATUS
+          </button>
+          <a href="/docs" target="_blank" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition font-bold flex items-center gap-1 whitespace-nowrap" title="FastAPI Interactive Swagger Docs">
+            <i data-lucide="code" class="w-3 h-3 text-purple-400"></i> API
+          </a>
+        </nav>
       </div>
 
-      <!-- RIGHT ACTIONS (THEME PICKER & SHORTCUTS) -->
-      <div class="flex items-center gap-2">
+      <!-- RIGHT ACTIONS (SEARCH, SETTINGS, THEME, ANALYST PROFILE) -->
+      <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
         
+        <!-- GLOBAL QUICK SEARCH INPUT (Ctrl+K) -->
+        <div class="relative hidden sm:block w-36 md:w-44 lg:w-56">
+          <input 
+            type="text" 
+            id="global-search-input" 
+            onkeydown="handleGlobalSearch(event)" 
+            placeholder="Search IoC, CVE... [Ctrl+K]" 
+            class="w-full h-8.5 bg-[#0a0f1d] border border-cyber-border rounded-xl pl-8 pr-2.5 text-xs font-mono text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyber-cyan focus:ring-1 focus:ring-cyber-cyan transition"
+          >
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+        </div>
+
+        <!-- SETTINGS MANAGER BUTTON -->
+        <button onclick="openSettingsModal()" class="h-8.5 w-8.5 rounded-xl bg-cyber-card border border-cyber-border text-slate-300 hover:text-amber-400 hover:border-amber-400/40 flex items-center justify-center transition flex-shrink-0" title="Security & API Settings [Ctrl+,]">
+          <i data-lucide="settings" class="w-4 h-4 text-amber-400"></i>
+        </button>
+
         <!-- THEME SELECTOR DROPDOWN -->
         <div class="relative">
-          <button onclick="toggleThemeDropdown(event)" id="theme-btn" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-cyber-card border border-cyber-border text-xs font-mono font-bold text-slate-300 hover:text-white transition">
+          <button onclick="toggleThemeDropdown(event)" id="theme-btn" class="h-8.5 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-cyber-card border border-cyber-border text-xs font-mono font-bold text-slate-300 hover:text-white transition flex-shrink-0">
             <i data-lucide="palette" class="w-3.5 h-3.5 text-cyber-cyan"></i>
-            <span id="theme-name" class="hidden sm:inline">Cyberpunk</span>
+            <span id="theme-name" class="hidden md:inline">Cyberpunk</span>
             <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
           </button>
           <div id="theme-dropdown" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-cyber-card border border-cyber-border shadow-2xl z-50 p-1.5 space-y-1 font-mono text-xs backdrop-blur-md">
@@ -376,6 +563,36 @@
             </button>
             <button onclick="setTheme('nord')" class="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between hover:bg-white/10 transition text-slate-200">
               <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-[#38bdf8]"></span>Nordic Frost</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE ANALYST PROFILE MENU -->
+        <div class="relative">
+          <button onclick="toggleAnalystDropdown(event)" id="analyst-badge-btn" class="h-8.5 flex items-center gap-2 px-2.5 sm:px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold hover:bg-emerald-500/20 transition flex-shrink-0 cursor-pointer" title="Click to view Analyst profile & session options">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="current-analyst-name" class="truncate max-w-[80px]">admin</span>
+            <span id="current-analyst-role" class="hidden md:inline px-1.5 py-0.5 rounded text-[10px] bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">TIER-2 SOC</span>
+            <i data-lucide="chevron-down" class="w-3 h-3 text-emerald-400"></i>
+          </button>
+          
+          <div id="analyst-dropdown" class="hidden absolute right-0 mt-2 w-56 rounded-xl bg-cyber-card border border-cyber-border shadow-2xl z-50 p-2 space-y-1 font-mono text-xs backdrop-blur-md">
+            <div class="px-2.5 py-1.5 border-b border-cyber-border/60">
+              <div class="text-[10px] text-slate-400 uppercase">Analyst Terminal</div>
+              <div class="font-bold text-white flex items-center justify-between mt-0.5">
+                <span id="menu-analyst-name">admin</span>
+                <span class="text-[10px] text-emerald-400 font-bold">ONLINE</span>
+              </div>
+              <div id="menu-analyst-role" class="text-[11px] text-slate-400">Tier-2 SOC</div>
+            </div>
+            <button onclick="openSettingsModal(); toggleAnalystDropdown(event)" class="w-full text-left px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2 transition">
+              <i data-lucide="settings" class="w-3.5 h-3.5 text-amber-400"></i> Settings Manager
+            </button>
+            <button onclick="lockTerminal(); toggleAnalystDropdown(event)" class="w-full text-left px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2 transition" title="Lock Terminal [Ctrl+L]">
+              <i data-lucide="lock" class="w-3.5 h-3.5 text-cyber-cyan"></i> Lock Terminal
+            </button>
+            <button onclick="handleAnalystLogout(); toggleAnalystDropdown(event)" class="w-full text-left px-2.5 py-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition border-t border-cyber-border/60 pt-2">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sign Out
             </button>
           </div>
         </div>
@@ -1298,6 +1515,10 @@
           <button onclick="setFeedSourceFilter('bleepingcomputer')" id="feed-src-bleepingcomputer" class="feed-src-btn px-3 py-1 rounded-lg bg-[#090d16] text-slate-400 border border-cyber-border hover:text-white transition">BleepingComputer</button>
           <button onclick="setFeedSourceFilter('cisa')" id="feed-src-cisa" class="feed-src-btn px-3 py-1 rounded-lg bg-[#090d16] text-slate-400 border border-cyber-border hover:text-white transition">CISA Advisories</button>
           <button onclick="setFeedSourceFilter('krebs')" id="feed-src-krebs" class="feed-src-btn px-3 py-1 rounded-lg bg-[#090d16] text-slate-400 border border-cyber-border hover:text-white transition">Krebs on Security</button>
+          <button onclick="setFeedSourceFilter('darkreading')" id="feed-src-darkreading" class="feed-src-btn px-3 py-1 rounded-lg bg-[#090d16] text-slate-400 border border-cyber-border hover:text-white transition">Dark Reading</button>
+          <button onclick="setFeedSourceFilter('sans_isc')" id="feed-src-sans_isc" class="feed-src-btn px-3 py-1 rounded-lg bg-[#090d16] text-slate-400 border border-cyber-border hover:text-white transition">SANS ISC</button>
+          <button onclick="setFeedSourceFilter('unit42')" id="feed-src-unit42" class="feed-src-btn px-3 py-1 rounded-lg bg-[#090d16] text-slate-400 border border-cyber-border hover:text-white transition">Unit 42</button>
+          <button onclick="setFeedSourceFilter('microsoft')" id="feed-src-microsoft" class="feed-src-btn px-3 py-1 rounded-lg bg-[#090d16] text-slate-400 border border-cyber-border hover:text-white transition">Microsoft Blog</button>
         </div>
 
         <!-- Critical Tools Watchlist Bar -->
@@ -1325,30 +1546,11 @@
               <i data-lucide="flame" class="w-3.5 h-3.5"></i>
               <span>KEV Exposure</span>
             </button>
-            <button onclick="toggleWatchlistManager()" id="btn-watchlist-manage" class="px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 font-bold flex items-center gap-1.5 transition">
-              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-              <span>Kelola List</span>
+            <button onclick="switchTab('watchlist')" id="btn-watchlist-manage" class="px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 font-bold flex items-center gap-1.5 transition" title="Buka Watchlist Manager untuk mengelola produk & aset">
+              <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+              <span>Watchlist Manager</span>
             </button>
           </div>
-        </div>
-
-        <!-- Watchlist Manager: upload / download critical tools list -->
-        <div id="watchlist-manager-panel" class="hidden rounded-xl border border-amber-500/30 bg-[#090d16] p-4 space-y-3 text-xs font-mono">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div>
-              <h4 class="font-bold text-amber-300 flex items-center gap-2"><i data-lucide="database" class="w-3.5 h-3.5"></i> List Critical Tools</h4>
-              <p class="text-[11px] text-slate-400 mt-0.5">Upload .xlsx / .csv (template, atau satu sheet per customer) atau .json. Produk dikenali otomatis dari katalog (alias, CPE, KEV).</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <a href="/api/watchlist/template" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Template</a>
-              <a href="/api/watchlist/export" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Download list saat ini</a>
-              <label class="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1.5 cursor-pointer">
-                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Pilih file
-                <input type="file" id="watchlist-upload-input" accept=".xlsx,.csv,.json" class="hidden" onchange="previewWatchlistUpload(this.files[0])">
-              </label>
-            </div>
-          </div>
-          <div id="watchlist-upload-result"></div>
         </div>
 
         <!-- Period Digest Panel: summarize filtered news for a date range -->
@@ -2032,26 +2234,651 @@
     </section>
 
 
-  </main>
+  
+    <!-- ============================================================
+         TAB: INCIDENT CASE CANVAS & EVIDENCE TIMELINE
+         ============================================================ -->
+    <section id="view-casecanvas" class="hidden space-y-6">
+      
+      <!-- CASE HEADER -->
+      <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 sm:p-6 space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyber-border/60 pb-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2.5">
+              <span class="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-mono font-bold">
+                INCIDENT WORKSPACE
+              </span>
+              <span id="case-severity-badge" class="px-2 py-0.5 rounded border border-red-500/40 bg-red-500/10 text-red-400 text-xs font-mono font-bold">
+                CRITICAL SEVERITY
+              </span>
+              <span id="case-status-badge" class="px-2 py-0.5 rounded border border-cyber-cyan/40 bg-cyber-cyan/10 text-cyber-cyan text-xs font-mono font-bold">
+                STATUS: INVESTIGATING
+              </span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-bold text-white font-mono flex items-center gap-2">
+              <i data-lucide="git-commit" class="w-5 h-5 text-amber-400"></i>
+              Incident Case Canvas & Evidence Timeline
+            </h2>
+            <p class="text-xs text-slate-400 font-mono">
+              Chronologically reconstruct attack chains, log forensic findings, and export clean SOC incident handover notes.
+            </p>
+          </div>
 
-  <!-- CYBERPUNK HUD FOOTER & CREATOR WATERMARK -->
-  <footer class="mt-auto border-t border-cyber-border/70 bg-[#090d16]/80 backdrop-blur-md py-4 px-4 sm:px-6 text-xs font-mono text-slate-400">
-    <div class="max-w-[1520px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-      <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-        <span class="text-sm">🦥</span>
-        <span class="font-bold text-white tracking-wide">LazySOC v3.0</span>
-        <span class="hidden sm:inline text-slate-600">|</span>
-        <span class="text-slate-400 text-[11px] sm:text-xs">Zero-Effort Automated Threat Intelligence Triage & SOC Workbench</span>
+          <!-- ACTIONS -->
+          <div class="flex items-center gap-2 flex-wrap font-mono text-xs">
+            <button onclick="exportCaseReport()" class="px-3 py-2 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/40 font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="file-text" class="w-4 h-4"></i> Export Handover Note
+            </button>
+            <button onclick="loadSampleCaseData()" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> Load Sample Incident
+            </button>
+            <button onclick="clearCaseData()" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-red-500/15 text-slate-400 hover:text-red-400 border border-cyber-border font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="trash-2" class="w-4 h-4"></i> Reset Case
+            </button>
+          </div>
+        </div>
+
+        <!-- CASE METADATA INPUTS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs">
+          <div>
+            <label class="text-[11px] text-slate-400 font-bold block mb-1">Case / Ticket ID</label>
+            <input type="text" id="case-id" value="INC-2026-9042" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-cyber-cyan focus:outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 font-bold block mb-1">Incident Title</label>
+            <input type="text" id="case-title" value="Suspicious Cobalt Strike C2 Beaconing & Phishing Link" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-cyber-cyan focus:outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 font-bold block mb-1">Lead Investigator</label>
+            <input type="text" id="case-lead" value="SOC Tier-2 Incident Responder" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-cyber-cyan focus:outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 font-bold block mb-1">Severity & Status</label>
+            <div class="flex gap-2">
+              <select id="case-severity" onchange="updateCaseHeaderBadges()" class="w-1/2 bg-[#070b14] border border-cyber-border rounded-lg px-2 py-2 text-slate-300 font-mono focus:border-cyber-cyan focus:outline-none">
+                <option value="CRITICAL">CRITICAL</option>
+                <option value="HIGH">HIGH</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="LOW">LOW</option>
+              </select>
+              <select id="case-status" onchange="updateCaseHeaderBadges()" class="w-1/2 bg-[#070b14] border border-cyber-border rounded-lg px-2 py-2 text-slate-300 font-mono focus:border-cyber-cyan focus:outline-none">
+                <option value="INVESTIGATING">INVESTIGATING</option>
+                <option value="CONTAINING">CONTAINING</option>
+                <option value="ERADICATED">ERADICATED</option>
+                <option value="RESOLVED">RESOLVED</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="text-slate-500">Open-Source SOC Platform by</span>
-        <a href="https://github.com/p3nr0s3" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyber-cyan/10 hover:bg-cyber-cyan/20 border border-cyber-cyan/30 text-cyber-cyan font-bold transition group" title="Creator GitHub Profile">
-          <i data-lucide="github" class="w-3.5 h-3.5 group-hover:scale-110 transition-transform"></i>
-          <span>@p3nr0s3</span>
-        </a>
+
+      <!-- MAIN CASE WORKSPACE GRID -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT: TIMELINE BUILDER & SEQUENCE (7 cols) -->
+        <div class="lg:col-span-7 space-y-5 font-mono">
+          
+          <!-- ADD EVENT FORM -->
+          <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-cyber-cyan"></i>
+              Add Timeline Event
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Timestamp (UTC)</label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="event-time" placeholder="YYYY-MM-DD HH:MM:SS" class="flex-1 bg-[#070b14] border border-cyber-border rounded-lg px-2.5 py-1.5 text-slate-200 text-xs">
+                  <button onclick="setEventTimeToNow()" class="px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] text-slate-300 border border-cyber-border" title="Set to current UTC time">Now</button>
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Telemetry Source</label>
+                <select id="event-source" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-2.5 py-1.5 text-slate-200 text-xs">
+                  <option value="Firewall / Gateway">Firewall / Gateway</option>
+                  <option value="EDR / Host Alert">EDR / Host Alert</option>
+                  <option value="Email Security (SEG)">Email Security (SEG)</option>
+                  <option value="Windows Event Log">Windows Event Log</option>
+                  <option value="Cloud Audit (AWS/M365)">Cloud Audit (AWS/M365)</option>
+                  <option value="SIEM Correlation">SIEM Correlation</option>
+                  <option value="User Report">User Report</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Severity</label>
+                <select id="event-severity" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-2.5 py-1.5 text-slate-200 text-xs">
+                  <option value="CRITICAL">CRITICAL</option>
+                  <option value="HIGH" selected>HIGH</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="LOW">LOW</option>
+                  <option value="INFO">INFO</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">Attacker IP / Affected Host</label>
+                <input type="text" id="event-actor" placeholder="e.g. 194.38.20.12 or WS-FIN-04" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-1.5 text-slate-200 text-xs">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block mb-1">MITRE ATT&CK Technique</label>
+                <input type="text" id="event-mitre" placeholder="e.g. T1566 (Phishing) or T1071 (C2)" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-1.5 text-slate-200 text-xs">
+              </div>
+            </div>
+
+            <div class="text-xs">
+              <label class="text-[10px] text-slate-400 block mb-1">Observation / Technical Description</label>
+              <textarea id="event-desc" rows="2" placeholder="Brief technical summary of the observed activity or log evidence..." class="w-full bg-[#070b14] border border-cyber-border rounded-lg p-2.5 text-slate-200 text-xs focus:border-cyber-cyan focus:outline-none"></textarea>
+            </div>
+
+            <button onclick="addTimelineEvent()" class="w-full py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center justify-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> Append Event to Incident Sequence
+            </button>
+          </div>
+
+          <!-- VERTICAL TIMELINE SEQUENCE CONTAINER -->
+          <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-cyber-border/60 pb-3">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4 text-cyber-cyan"></i>
+                Attack Sequence Timeline (<span id="timeline-count">0</span> events)
+              </h3>
+              <span class="text-[11px] text-slate-400">Oldest to Newest Sequence</span>
+            </div>
+
+            <div id="case-timeline-container" class="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-cyber-border/80 pl-2">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT: EVIDENCE VAULT & NOTES (5 cols) -->
+        <div class="lg:col-span-5 space-y-5 font-mono text-xs">
+          
+          <!-- EVIDENCE PINBOARD / IOCS -->
+          <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-cyber-border/60 pb-3">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="paperclip" class="w-4 h-4 text-cyber-cyan"></i>
+                Evidence Vault & Pinned Indicators
+              </h3>
+              <button onclick="openAddEvidencePrompt()" class="px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-[10px] text-cyber-cyan border border-cyber-border">
+                + Pin IoC
+              </button>
+            </div>
+
+            <div id="case-evidence-list" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- ANALYST HYPOTHESES & ACTIONS TAKEN -->
+          <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 space-y-3">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-4 h-4 text-amber-400"></i>
+              Analyst Hypotheses & Immediate Actions
+            </h3>
+            <textarea id="case-notes" rows="6" placeholder="Document containment actions taken, user interview results, ticket URLs, or next investigation steps..." class="w-full bg-[#070b14] border border-cyber-border rounded-lg p-3 text-slate-200 text-xs focus:border-cyber-cyan focus:outline-none"></textarea>
+          </div>
+
+          <!-- GENERATED HANDOVER PREVIEW MODAL TRIGGER -->
+          <div class="rounded-2xl border border-cyber-border bg-cyber-card p-4 text-center space-y-2">
+            <div class="text-xs text-slate-400">Ready to share findings with the Tier-3 incident response team or management?</div>
+            <button onclick="exportCaseReport()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan/20 to-blue-500/20 hover:from-cyber-cyan/30 hover:to-blue-500/30 text-white font-bold border border-cyber-cyan/40 transition flex items-center justify-center gap-2">
+              <i data-lucide="clipboard-check" class="w-4 h-4 text-cyber-cyan"></i> Generate SOC Incident Handover Note
+            </button>
+          </div>
+
+        </div>
+
       </div>
-    </div>
-  </footer>
+
+    </section>
+
+    <!-- ============================================================
+         TAB: SUSPICIOUS SCRIPT & WEBSHELL SCANNER
+         ============================================================ -->
+    <section id="view-scriptscan" class="hidden space-y-6">
+      
+      <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 sm:p-6 space-y-4 font-mono">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyber-border/60 pb-4">
+          <div>
+            <div class="flex items-center gap-2.5 mb-1">
+              <span class="px-2.5 py-0.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-bold">
+                STATIC PAYLOAD INSPECTION
+              </span>
+              <span class="text-slate-500 text-xs">PHP / PowerShell / Bash / Python</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="file-code-2" class="w-5 h-5 text-red-400"></i>
+              Suspicious Script & Web Shell Scanner
+            </h2>
+            <p class="text-xs text-slate-400">
+              Inspect suspicious scripts, server webshells, download cradles, and reverse shells for attack signatures and MITRE TTPs.
+            </p>
+          </div>
+
+          <!-- SAMPLES BUTTONS -->
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] text-slate-500">Samples:</span>
+            <button onclick="loadSampleScript('php_eval')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border text-xs transition">PHP Shell</button>
+            <button onclick="loadSampleScript('ps_cradle')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border text-xs transition">PowerShell IEX</button>
+            <button onclick="loadSampleScript('bash_rev')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border text-xs transition">Bash TCP Shell</button>
+          </div>
+        </div>
+
+        <!-- INPUT TEXTAREA -->
+        <div class="space-y-2">
+          <textarea 
+            id="script-input" 
+            rows="7" 
+            placeholder="Paste suspicious PHP webshell code, obfuscated PowerShell cradles, reverse shell commands, or server scripts here..." 
+            class="w-full bg-[#070b14] border border-cyber-border rounded-xl p-3.5 text-xs text-slate-200 font-mono focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/30 transition"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <button onclick="runScriptScan()" id="btn-scan-script" class="px-5 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="scan" class="w-4 h-4"></i> Inspect Script Payload
+          </button>
+          <button onclick="document.getElementById('script-input').value = ''; document.getElementById('script-scan-results').classList.add('hidden');" class="text-xs text-slate-500 hover:text-slate-300 transition">
+            Clear Input
+          </button>
+        </div>
+      </div>
+
+      <!-- RESULTS CONTAINER -->
+      <div id="script-scan-results" class="hidden space-y-5 font-mono">
+        <!-- Rendered via JS -->
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         TAB: DARKWEB & RANSOMWARE INTELLIGENCE
+         ============================================================ -->
+    <section id="view-darkweb" class="hidden space-y-6">
+      
+      <!-- HERO & OVERVIEW TILES -->
+      <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 sm:p-6 space-y-5 font-mono">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyber-border/60 pb-4">
+          <div>
+            <div class="flex items-center gap-2.5 mb-1">
+              <span class="px-2.5 py-0.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-bold">
+                TOR & LEAK SITE SURVEILLANCE
+              </span>
+              <span class="text-slate-500 text-xs">Live Telemetry // Ransomware.live Integration</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="skull" class="w-5 h-5 text-red-400"></i>
+              Darkweb & Ransomware Intelligence Workbench
+            </h2>
+            <p class="text-xs text-slate-400">
+              Track active ransomware cartels, live victim disclosures from Tor leak blogs, and curated cybercrime IoCs.
+            </p>
+          </div>
+
+          <button onclick="fetchDarkwebData(true)" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border text-xs font-bold flex items-center gap-2 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-cyber-cyan"></i> Refresh Feeds
+          </button>
+        </div>
+
+        <!-- 4 KPI CARDS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div class="p-3.5 rounded-xl bg-[#070b14] border border-cyber-border space-y-1">
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Active Cartels</div>
+            <div id="dw-stat-groups" class="text-xl font-bold text-white">8 Groups</div>
+            <div class="text-[10px] text-red-400">RaaS Operations Tracked</div>
+          </div>
+          <div class="p-3.5 rounded-xl bg-[#070b14] border border-cyber-border space-y-1">
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Victims Disclosed</div>
+            <div id="dw-stat-victims" class="text-xl font-bold text-amber-300">100+ Claims</div>
+            <div class="text-[10px] text-slate-400">Real-time Tor leak posts</div>
+          </div>
+          <div class="p-3.5 rounded-xl bg-[#070b14] border border-cyber-border space-y-1">
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Top Target Sector</div>
+            <div id="dw-stat-sector" class="text-base font-bold text-cyber-cyan truncate">Manufacturing</div>
+            <div class="text-[10px] text-slate-400">Highest victim velocity</div>
+          </div>
+          <div class="p-3.5 rounded-xl bg-[#070b14] border border-cyber-border space-y-1">
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Threat Condition</div>
+            <div class="text-base font-bold text-red-400 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span> ELEVATED
+            </div>
+            <div class="text-[10px] text-slate-400">Triple extortion active</div>
+          </div>
+        </div>
+
+        <!-- SUB NAVIGATION TABS -->
+        <div class="flex items-center gap-2 border-b border-cyber-border/80 pt-2 overflow-x-auto">
+          <button onclick="switchDarkwebSubTab('victims')" id="dw-tab-victims" class="px-4 py-2 border-b-2 border-red-400 text-white font-bold text-xs flex items-center gap-2 transition">
+            <i data-lucide="radio" class="w-3.5 h-3.5 text-red-400"></i> LIVE LEAK DISCLOSURES
+          </button>
+          <button onclick="switchDarkwebSubTab('groups')" id="dw-tab-groups" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-white font-bold text-xs flex items-center gap-2 transition">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-amber-400"></i> CARTEL TTP MATRIX
+          </button>
+          <button onclick="switchDarkwebSubTab('iocs')" id="dw-tab-iocs" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-white font-bold text-xs flex items-center gap-2 transition">
+            <i data-lucide="database" class="w-3.5 h-3.5 text-cyber-cyan"></i> DARKWEB IOC STREAM
+          </button>
+          <button onclick="switchDarkwebSubTab('domain-intel')" id="dw-tab-domain-intel" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-white font-bold text-xs flex items-center gap-2 transition">
+            <i data-lucide="globe-2" class="w-3.5 h-3.5 text-purple-400"></i> DOMAIN & CREDENTIAL RECON
+          </button>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 1: VICTIMS FEED -->
+      <div id="dw-panel-victims" class="space-y-4 font-mono">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="relative flex-1 max-w-md">
+            <input 
+              type="text" 
+              id="dw-victim-search" 
+              oninput="handleDarkwebSearchInput()" 
+              placeholder="Search victim company, group, or country..." 
+              class="w-full bg-[#070b14] border border-cyber-border rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:border-red-500 focus:outline-none"
+            >
+            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+          </div>
+          <div class="text-xs text-slate-400">
+            Showing <span id="dw-victim-count" class="font-bold text-white">0</span> recent victim leaks
+          </div>
+        </div>
+
+        <div id="dw-victims-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- Darkweb Victims Pagination Bar -->
+        <div id="dw-pagination" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-cyber-border/70 text-xs font-mono">
+          <div class="text-slate-400 text-[11px] text-center sm:text-left flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
+            <span>Showing</span>
+            <span id="dw-range-start" class="text-white font-bold">1</span>-<span id="dw-range-end" class="text-white font-bold">20</span>
+            <span>of</span>
+            <span id="dw-total-count" class="text-red-400 font-bold">0</span>
+            <span>disclosures</span>
+            <span id="dw-search-tag" class="hidden px-2 py-0.5 rounded text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 font-semibold"></span>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-center gap-1.5" id="dw-pagination-controls">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+          <div class="flex items-center justify-center sm:justify-end gap-3 text-[11px] text-slate-400">
+            <div class="hidden md:flex items-center gap-1.5">
+              <span>Go to:</span>
+              <input 
+                type="number" 
+                id="dw-jump-page" 
+                min="1" 
+                placeholder="1" 
+                onkeydown="if(event.key==='Enter') jumpToDarkwebPage(this.value)" 
+                class="w-12 px-1.5 py-0.5 bg-[#090d16] border border-cyber-border rounded text-center text-white text-xs focus:outline-none focus:border-red-500"
+              >
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span>Per page:</span>
+              <select id="dw-page-size" onchange="changeDarkwebPageSize(this.value)" class="bg-[#090d16] border border-cyber-border rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-red-500 text-xs">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 2: RANSOMWARE GROUPS -->
+      <div id="dw-panel-groups" class="hidden space-y-4 font-mono">
+        <div id="dw-groups-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 3: DARKWEB IOCS -->
+      <div id="dw-panel-iocs" class="hidden space-y-4 font-mono">
+        <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-cyber-cyan"></i>
+              Curated Cybercrime & Ransomware Indicators
+            </h3>
+            <span class="text-xs text-slate-400">Click "Triage" to immediately scan in LazySOC</span>
+          </div>
+          <div id="dw-iocs-table-container" class="overflow-x-auto">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 4: DOMAIN DARKWEB RECON & CREDENTIAL LEAK INTELLIGENCE -->
+      <div id="dw-panel-domain-intel" class="hidden space-y-5 font-mono">
+        
+        <!-- SEARCH & QUERY BAR -->
+        <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 sm:p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyber-border/60 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="globe-2" class="w-4 h-4 text-purple-400"></i> Corporate Domain Darkweb Recon & Credential Audit
+              </h3>
+              <p class="text-xs text-slate-400">
+                Surveil Tor ransomware blogs, initial access broker markets, and infostealer malware logs (Lumma, RedLine) for corporate domain exposure.
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <form onsubmit="runDomainDarkwebRecon(event)" class="flex flex-col sm:flex-row gap-2">
+              <div class="relative flex-1">
+                <input 
+                  type="text" 
+                  id="dw-domain-search-input" 
+                  placeholder="Enter corporate domain (e.g. company.com, bank.co.id, pertamina.com)..." 
+                  class="w-full bg-[#070b14] border border-cyber-border rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:border-purple-400 focus:outline-none"
+                >
+                <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-3"></i>
+              </div>
+              <button 
+                type="submit" 
+                id="btn-domain-recon-submit"
+                class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-purple-600/20 whitespace-nowrap"
+              >
+                <i data-lucide="scan" class="w-4 h-4"></i>
+                <span>Analyze Domain Exposure</span>
+              </button>
+            </form>
+
+            <!-- PRESET SAMPLES (100% REAL VALIDATED DISCLOSURES & CLEAN BENCHMARK) -->
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="text-slate-500 text-[11px]">Threat Database Benchmarks:</span>
+              <button onclick="setDomainSearchSample('visionet.co.id')" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold transition flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i> visionet.co.id (Clean)
+              </button>
+              <button onclick="setDomainSearchSample('synergy.co.id')" class="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 text-[11px] font-bold transition flex items-center gap-1">
+                <i data-lucide="flame" class="w-3 h-3 text-red-400"></i> synergy.co.id (LockBit 5)
+              </button>
+              <button onclick="setDomainSearchSample('wika-beton.co.id')" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition flex items-center gap-1">
+                <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-400"></i> wika-beton.co.id (TheGentlemen)
+              </button>
+              <button onclick="setDomainSearchSample('cdkglobal.com')" class="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 text-[11px] font-bold transition flex items-center gap-1">
+                <i data-lucide="flame" class="w-3 h-3 text-red-400"></i> cdkglobal.com (BlackSuit)
+              </button>
+              <button onclick="setDomainSearchSample('changehealthcare.com')" class="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 text-[11px] font-bold transition flex items-center gap-1">
+                <i data-lucide="shield-alert" class="w-3 h-3 text-purple-400"></i> changehealthcare.com (RansomHub)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECON RESULTS CONTAINER -->
+        <div id="dw-domain-results-container" class="space-y-5">
+          <!-- Populated by JS -->
+          <div class="p-8 text-center rounded-2xl border border-cyber-border bg-cyber-card text-slate-500 text-xs">
+            Enter a corporate domain above to scan darkweb leak sites, initial access markets, and infostealer malware logs.
+          </div>
+        </div>
+
+        <!-- DEDICATED PASSWORD PWNED VERIFIER TOOL -->
+        <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 sm:p-6 space-y-4">
+          <div class="border-b border-cyber-border/60 pb-3">
+            <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2">
+              <i data-lucide="key-round" class="w-4 h-4 text-amber-400"></i> Public Breach & Password Pwned Verifier (k-Anonymity)
+            </h3>
+            <p class="text-xs text-slate-400">
+              Query 900M+ real-world leaked passwords with zero exposure. Only a 5-character SHA-1 prefix is checked.
+            </p>
+          </div>
+
+          <form onsubmit="checkPasswordPwned(event)" class="flex flex-col sm:flex-row gap-2 max-w-xl">
+            <div class="relative flex-1">
+              <input 
+                type="text" 
+                id="dw-pwned-pwd-input" 
+                placeholder="Enter password or credential string to verify..." 
+                class="w-full bg-[#070b14] border border-cyber-border rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+              >
+              <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+            </div>
+            <button 
+              type="submit" 
+              class="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold text-xs flex items-center justify-center gap-1.5 transition whitespace-nowrap cursor-pointer"
+            >
+              <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+              <span>Verify Password</span>
+            </button>
+          </form>
+
+          <div id="dw-pwned-result" class="hidden"></div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         TAB: CRITICAL TOOLS WATCHLIST & ASSET INVENTORY
+         ============================================================ -->
+    <section id="view-watchlist" class="hidden space-y-6">
+      
+      <!-- HEADER & ACTIONS -->
+      <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 sm:p-6 space-y-4 font-mono">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyber-border/60 pb-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                ENTERPRISE INVENTORY
+              </span>
+              <span class="text-slate-500 text-xs">Internal Infrastructure & Client Assets</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="list-checks" class="w-5 h-5 text-amber-400"></i>
+              Critical Tools Watchlist & Asset Inventory
+            </h2>
+            <p class="text-xs text-slate-400">
+              Track enterprise firewalls, server appliances, and client deployments to correlate with live CISA KEV and threat news.
+            </p>
+          </div>
+
+          <!-- ACTIONS -->
+          <div class="flex items-center gap-2 flex-wrap text-xs">
+            <button onclick="openAddWatchlistModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="plus" class="w-4 h-4"></i> + Add Watchlist Item
+            </button>
+            <button onclick="seedWatchlistDefaults()" class="px-3.5 py-2 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/40 font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> Load Popular Defaults
+            </button>
+            <button onclick="viewWatchlistInCyberFeeds()" class="px-3.5 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 font-bold flex items-center gap-1.5 transition" title="Lihat semua artikel terkait Watchlist di Cyber Feeds">
+              <i data-lucide="rss" class="w-4 h-4"></i> View in Cyber Feeds
+            </button>
+            <a href="/api/watchlist/export" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border flex items-center gap-1.5 transition font-bold" title="Download spreadsheet Watchlist">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Export .xlsx
+            </a>
+          </div>
+        </div>
+
+        <!-- SEARCH & FILTER BAR -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div>
+            <input 
+              type="text" 
+              id="wl-filter-search" 
+              oninput="renderWatchlistTableView()" 
+              placeholder="Filter by product, vendor, or version..." 
+              class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-slate-200 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+            >
+          </div>
+          <div>
+            <select id="wl-filter-owner" onchange="renderWatchlistTableView()" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-slate-200 focus:border-amber-400 focus:outline-none">
+              <option value="">All Owners / Clients</option>
+            </select>
+          </div>
+          <div>
+            <select id="wl-filter-crit" onchange="renderWatchlistTableView()" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-slate-200 focus:border-amber-400 focus:outline-none">
+              <option value="">All Criticality Levels</option>
+              <option value="critical">Critical Only</option>
+              <option value="high">High Only</option>
+              <option value="normal">Normal Only</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- WATCHLIST ASSETS TABLE CONTAINER -->
+      <div class="rounded-2xl border border-cyber-border bg-cyber-card p-5 space-y-4 font-mono">
+        <div class="flex items-center justify-between border-b border-cyber-border/60 pb-3 text-xs">
+          <h3 class="font-bold text-white flex items-center gap-2">
+            <i data-lucide="server" class="w-4 h-4 text-amber-400"></i>
+            Tracked Assets & Infrastructure (<span id="wl-table-count">0</span> products)
+          </h3>
+          <span class="text-slate-400 text-[11px]">Auto-correlated against CISA KEV and CVE catalogs</span>
+        </div>
+
+        <div id="watchlist-table-container" class="overflow-x-auto">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+    </section>
+
+    </main>
+
+    <!-- ============================================================
+         UNIFIED LAZYSOC PLATFORM FOOTER (SINGLE PROPORTIONAL BAR)
+         ============================================================ -->
+    <footer class="mt-auto border-t border-cyber-border/70 bg-[#070a14]/90 backdrop-blur-md py-3.5 px-4 sm:px-6 text-xs font-mono text-slate-400 select-none">
+      <div class="max-w-[1520px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-3 text-center lg:text-left">
+        
+        <!-- LEFT: BRAND & OPERATIONAL STATUS -->
+        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2.5">
+          <span class="text-base">🦥</span>
+          <span class="font-bold text-white tracking-wide">LazySOC v3.0.0</span>
+          <span class="text-slate-600 hidden sm:inline">|</span>
+          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-bold text-emerald-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Engine Operational
+          </span>
+          <span class="text-slate-600 hidden sm:inline">|</span>
+          <span class="text-slate-400 text-[11px]">Zero Telemetry · Local SQLite Storage</span>
+        </div>
+
+        <!-- RIGHT: NAVIGATION LINKS & CREATOR WATERMARK -->
+        <div class="flex flex-wrap items-center justify-center lg:justify-end gap-3 sm:gap-4 text-xs">
+          <button onclick="openDocsModal()" class="text-slate-400 hover:text-cyber-cyan transition">Documentation</button>
+          <a href="/docs" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-cyber-cyan transition">FastAPI Swagger</a>
+          <button onclick="openSystemHealthModal()" class="text-slate-400 hover:text-cyber-cyan transition">System Status</button>
+          <span class="text-slate-600 hidden sm:inline">|</span>
+          <span class="text-slate-500 text-[11px] hidden sm:inline">MIT License</span>
+          <span class="text-slate-600 hidden sm:inline">|</span>
+          <a href="https://github.com/p3nr0s3" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyber-cyan/10 hover:bg-cyber-cyan/20 border border-cyber-cyan/30 text-cyber-cyan font-bold transition group" title="Creator GitHub Profile">
+            <i data-lucide="github" class="w-3.5 h-3.5 group-hover:scale-110 transition-transform"></i>
+            <span>@p3nr0s3</span>
+          </a>
+        </div>
+
+      </div>
+    </footer>
 
   </div>
 
@@ -2632,17 +3459,21 @@ Content-Type: text/html; charset=UTF-8
 
     const TAB_INFO = {
       triage: "IoC Threat Triage",
+      casecanvas: "Incident Case Canvas & Evidence Timeline",
+      scriptscan: "Suspicious Script & Web Shell Scanner",
       recon: "Network Recon",
       eml: "Phishing EML & Headers",
       urltrace: "Safe URL Redirect Tracer",
       deobf: "SOC De-obfuscator Studio",
       mail: "Domain Mail Health",
       feed: "Real-Time Cyber Feeds",
+      darkweb: "Darkweb & Ransomware Intelligence",
       cve: "Online CVE & NIST NVD Intel",
-      mitre: "MITRE ATT&CK® Matrix & TTP Heatmap",
+      mitre: "MITRE ATT&CK Matrix & TTP Heatmap",
       sanitize: "IoC Defanger & Text Normalizer",
       cache: "Cache & Investigation Logs",
-      soctoolkit: "L1 SOC Analyst Studio"
+      soctoolkit: "L1 SOC Analyst Studio",
+      watchlist: "Critical Tools Watchlist & Asset Inventory"
     };
 
     function toggleSidebar(forceState) {
@@ -2671,6 +3502,10 @@ Content-Type: text/html; charset=UTF-8
       if (icon) {
         icon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
       }
+      const slideIcon = document.getElementById('sidebar-slide-icon');
+      if (slideIcon) {
+        slideIcon.setAttribute('data-lucide', isCollapsed ? 'chevrons-right' : 'chevrons-left');
+      }
       lucide.createIcons();
     }
 
@@ -2687,7 +3522,8 @@ Content-Type: text/html; charset=UTF-8
     })();
 
     function switchTab(tabId) {
-      ['triage', 'recon', 'eml', 'urltrace', 'deobf', 'mail', 'feed', 'cve', 'mitre', 'sanitize', 'cache', 'soctoolkit'].forEach(t => {
+      const allTabs = ['triage', 'recon', 'eml', 'urltrace', 'deobf', 'mail', 'feed', 'cve', 'mitre', 'sanitize', 'cache', 'soctoolkit', 'casecanvas', 'scriptscan', 'darkweb', 'watchlist'];
+      allTabs.forEach(t => {
         const view = document.getElementById(`view-${t}`);
         const btn = document.getElementById(`tab-btn-${t}`);
         if (view) view.classList.add('hidden');
@@ -2708,7 +3544,7 @@ Content-Type: text/html; charset=UTF-8
 
       const pageTitle = document.getElementById('page-title-text');
       if (pageTitle && TAB_INFO[tabId]) {
-        pageTitle.innerText = TAB_INFO[tabId];
+        pageTitle.innerText = TAB_INFO[tabId].toUpperCase();
       }
 
       if (window.innerWidth < 1024) {
@@ -2719,7 +3555,10 @@ Content-Type: text/html; charset=UTF-8
       if (tabId === 'cve') fetchCveIntel();
       if (tabId === 'mitre') fetchMitreMatrix();
       if (tabId === 'cache') fetchCache();
-      lucide.createIcons();
+      if (tabId === 'darkweb' && typeof fetchDarkwebData === 'function') fetchDarkwebData();
+      if (tabId === 'watchlist' && typeof renderWatchlistTableView === 'function') renderWatchlistTableView();
+      if (tabId === 'casecanvas' && typeof initCaseCanvas === 'function') initCaseCanvas();
+      if (window.lucide) lucide.createIcons();
     }
 
     // ==========================================
@@ -5267,7 +6106,7 @@ tags:
 
     function setFeedSourceFilter(source) {
       activeFeedSource = source;
-      ['all', 'thehackernews', 'bleepingcomputer', 'cisa', 'krebs'].forEach(s => {
+      ['all', 'thehackernews', 'bleepingcomputer', 'cisa', 'krebs', 'darkreading', 'sans_isc', 'unit42', 'microsoft'].forEach(s => {
         const btn = document.getElementById(`feed-src-${s}`);
         if (!btn) return;
         if (s === source) {
@@ -5416,7 +6255,11 @@ tags:
         'The Hacker News': 'bg-red-950/40 text-red-400 border-red-500/30',
         'BleepingComputer': 'bg-blue-950/40 text-blue-400 border-blue-500/30',
         'CISA Advisories': 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30',
-        'Krebs on Security': 'bg-purple-950/40 text-purple-400 border-purple-500/30'
+        'Krebs on Security': 'bg-purple-950/40 text-purple-400 border-purple-500/30',
+        'Dark Reading': 'bg-cyan-950/40 text-cyan-400 border-cyan-500/30',
+        'SANS ISC': 'bg-amber-950/40 text-amber-400 border-amber-500/30',
+        'Unit 42': 'bg-rose-950/40 text-rose-400 border-rose-500/30',
+        'Microsoft Security': 'bg-indigo-950/40 text-indigo-400 border-indigo-500/30'
       };
 
       container.innerHTML = articles.map((a, idx) => {
@@ -5574,7 +6417,7 @@ tags:
     let pendingWatchlistFile = null;
 
     function toggleWatchlistManager() {
-      document.getElementById('watchlist-manager-panel')?.classList.toggle('hidden');
+      switchTab('watchlist');
     }
 
     // Server errors (e.g. a 500 page) are not always JSON; surface the HTTP status instead of a parse error.
@@ -7029,6 +7872,541 @@ https://storage.malicious-cloud.com/dropper.exe (SHA256: e3b0c44298fc1c149afbf4c
       }
     }
   </script>
+
+
+  <!-- ============================================================
+       MODAL: ADD WATCHLIST ITEM
+       ============================================================ -->
+  <div id="modal-add-watchlist" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-cyber-card border border-amber-500/40 rounded-2xl max-w-lg w-full p-6 space-y-4 font-mono shadow-2xl animate-fade-in">
+      <div class="flex items-center justify-between border-b border-cyber-border pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-base font-bold text-white">Add Watchlist Product</h3>
+        </div>
+        <button onclick="closeAddWatchlistModal()" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1 font-bold">Product Name *</label>
+          <input type="text" id="add-wl-product" list="catalog-products-list" placeholder="e.g. FortiOS / FortiGate or Windows Server" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-amber-400 focus:outline-none">
+          <datalist id="catalog-products-list"></datalist>
+          <span class="text-[10px] text-slate-500">Pick from 70+ enterprise presets or type any custom software name.</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1 font-bold">Vendor (Optional)</label>
+            <input type="text" id="add-wl-vendor" placeholder="e.g. Fortinet or Microsoft" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-amber-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1 font-bold">Deployed Version</label>
+            <input type="text" id="add-wl-version" placeholder="e.g. 7.4.3 or 2022" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-amber-400 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1 font-bold">Owner / Client *</label>
+            <input type="text" id="add-wl-owner" value="Internal Enterprise" placeholder="e.g. Internal or Client Alpha" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-amber-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1 font-bold">Criticality</label>
+            <select id="add-wl-criticality" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-amber-400 focus:outline-none">
+              <option value="critical">CRITICAL (Direct Gateway / AD)</option>
+              <option value="high">HIGH (Core Internal Tool)</option>
+              <option value="normal" selected>NORMAL (Standard Software)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1 font-bold">Category</label>
+          <input type="text" id="add-wl-category" placeholder="e.g. Firewall / VPN, Web Server, Operating System" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-amber-400 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1 font-bold">Internal Note</label>
+          <input type="text" id="add-wl-note" placeholder="e.g. Edge perimeter firewall 01 (datacenter)" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-white font-mono focus:border-amber-400 focus:outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-cyber-border">
+        <button onclick="closeAddWatchlistModal()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs transition">Cancel</button>
+        <button onclick="saveWatchlistItem()" class="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i> Save to Watchlist
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: USER GUIDE & DOCUMENTATION
+       ============================================================ -->
+  <div id="modal-docs" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-3xl w-full p-6 space-y-5 font-mono shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar animate-fade-in">
+      <div class="flex items-center justify-between border-b border-cyber-border pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="book-open" class="w-5 h-5 text-cyber-cyan"></i>
+          <h3 class="text-base font-bold text-white">LazySOC Platform User Guide & Documentation</h3>
+        </div>
+        <button onclick="closeDocsModal()" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-300">
+        <div class="p-3.5 rounded-xl bg-[#070b14] border border-cyber-border space-y-1">
+          <div class="text-cyber-cyan font-bold text-sm">🦥 What is LazySOC?</div>
+          <p class="text-slate-400">
+            LazySOC is a dark-mode cybersecurity workbench built for SOC analysts, incident responders, and threat hunters. It combines multi-key threat intelligence enrichment (VirusTotal, AbuseIPDB, URLhaus, GreyNoise, ThreatFox), deep email forensics, active URL redirection tracing, live darkweb leak site monitoring, and NIST NVD CVE correlation.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-amber-300 font-bold text-sm">⚡ Keyboard Shortcuts & Quick Jumps</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="p-2.5 rounded-lg bg-white/5 border border-cyber-border flex justify-between items-center">
+              <span>Quick Search Palette:</span>
+              <kbd class="px-2 py-0.5 rounded bg-black/50 border border-cyber-border text-cyber-cyan">Ctrl + K</kbd>
+            </div>
+            <div class="p-2.5 rounded-lg bg-white/5 border border-cyber-border flex justify-between items-center">
+              <span>Run IoC Triage Scan:</span>
+              <kbd class="px-2 py-0.5 rounded bg-black/50 border border-cyber-border text-cyber-cyan">Ctrl + Enter</kbd>
+            </div>
+            <div class="p-2.5 rounded-lg bg-white/5 border border-cyber-border flex justify-between items-center">
+              <span>Close Active Modal:</span>
+              <kbd class="px-2 py-0.5 rounded bg-black/50 border border-cyber-border text-cyber-cyan">Esc</kbd>
+            </div>
+            <div class="p-2.5 rounded-lg bg-white/5 border border-cyber-border flex justify-between items-center">
+              <span>API Swagger UI:</span>
+              <a href="/docs" target="_blank" class="text-purple-400 hover:underline">/docs</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-cyber-cyan font-bold text-sm">🎯 Core Modules Summary</div>
+          <ul class="list-disc list-inside space-y-1.5 text-slate-400">
+            <li><strong class="text-white">IoC Triage:</strong> Multi-key API rotation with auto-cooldown and SIEM query generation.</li>
+            <li><strong class="text-white">Case Timeline:</strong> Build incident event sequences and export handover reports.</li>
+            <li><strong class="text-white">Script Scanner:</strong> Static detection of PHP webshells, PowerShell cradles, and reverse shells.</li>
+            <li><strong class="text-white">Darkweb Intelligence:</strong> Live Tor leak site disclosures and ransomware cartel tracking.</li>
+            <li><strong class="text-white">Watchlist Manager:</strong> Inventory matching with CISA KEV and NVD CPE impact analysis.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-cyber-border">
+        <button onclick="closeDocsModal()" class="px-4 py-2 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/40 text-xs font-bold transition">Close Guide</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: SYSTEM HEALTH & STATUS
+       ============================================================ -->
+  <div id="modal-health" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-lg w-full p-6 space-y-4 font-mono shadow-2xl animate-fade-in">
+      <div class="flex items-center justify-between border-b border-cyber-border pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i>
+          <h3 class="text-base font-bold text-white">LazySOC System Health</h3>
+        </div>
+        <button onclick="closeSystemHealthModal()" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="p-3 rounded-xl bg-[#070b14] border border-cyber-border flex items-center justify-between">
+          <span class="text-slate-400">Core Engine:</span>
+          <span class="text-emerald-400 font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ONLINE</span>
+        </div>
+        <div class="p-3 rounded-xl bg-[#070b14] border border-cyber-border flex items-center justify-between">
+          <span class="text-slate-400">Cache Database:</span>
+          <span class="text-white font-bold">SQLite 3 (WAL Mode Active)</span>
+        </div>
+        <div class="p-3 rounded-xl bg-[#070b14] border border-cyber-border flex items-center justify-between">
+          <span class="text-slate-400">Threat Feeds Aggregator:</span>
+          <span class="text-white font-bold">8 Active Cyber Feeds</span>
+        </div>
+        <div class="p-3 rounded-xl bg-[#070b14] border border-cyber-border flex items-center justify-between">
+          <span class="text-slate-400">Darkweb Leak Monitor:</span>
+          <span class="text-emerald-400 font-bold">Connected (Ransomware.live)</span>
+        </div>
+        <div class="p-3 rounded-xl bg-[#070b14] border border-cyber-border flex items-center justify-between">
+          <span class="text-slate-400">Local Telemetry / Data Privacy:</span>
+          <span class="text-emerald-400 font-bold">Air-Gapped Local Only</span>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-cyber-border">
+        <button onclick="closeSystemHealthModal()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs transition">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOAD ENHANCED JAVASCRIPT MODULE -->
+  <script src="/static/app_extra.js"></script>
+
+
+  <!-- ============================================================
+       WEB LOGIN & TERMINAL LOCK SCREEN MODAL
+       ============================================================ -->
+  <div id="analyst-auth-modal" class="fixed inset-0 bg-[#04060d]/90 backdrop-blur-lg z-50 flex items-center justify-center p-4 hidden">
+    <div class="max-w-md w-full bg-[#080d1a] border border-cyber-cyan/40 rounded-2xl p-6 sm:p-7 shadow-2xl font-mono space-y-5 glow-cyan relative overflow-hidden">
+      <!-- Glow ambient backdrop inside card -->
+      <div class="absolute -right-16 -top-16 w-36 h-36 bg-cyber-cyan/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="space-y-1.5 text-center">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyber-cyan/15 border border-cyber-cyan/30 text-cyber-cyan text-[10px] font-bold tracking-wider uppercase mb-1">
+          <i data-lucide="shield-check" class="w-3 h-3"></i>
+          SECURE TERMINAL ACCESS
+        </div>
+        <h3 class="text-lg font-bold text-white flex items-center justify-center gap-2">
+          <span>🦥</span> LazySOC Analyst Gateway
+        </h3>
+        <p class="text-xs text-slate-400">
+          Enter your analyst credentials to authenticate your session.
+        </p>
+      </div>
+
+      <!-- Quick Preset Credentials Help Pill -->
+      <div class="p-2.5 rounded-xl bg-white/5 border border-cyber-border text-[11px] text-slate-400 flex items-center justify-between">
+        <span class="text-slate-400">Default Presets:</span>
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="quickFillLogin('admin', 'lazysoc2026', 'SOC Lead / Admin')" class="px-2 py-0.5 rounded bg-cyber-cyan/10 text-cyber-cyan hover:bg-cyber-cyan/20 border border-cyber-cyan/30 font-bold transition">admin</button>
+          <button type="button" onclick="quickFillLogin('analyst', 'analyst2026', 'Tier-2 SOC')" class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30 font-bold transition">analyst</button>
+        </div>
+      </div>
+
+      <!-- Error / Alert Banner -->
+      <div id="login-error-alert" class="hidden p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+        <i data-lucide="alert-triangle" class="w-4 h-4 flex-shrink-0 text-red-400"></i>
+        <span id="login-error-text">Invalid handle or passphrase.</span>
+      </div>
+
+      <form onsubmit="handleAnalystLogin(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Analyst Handle</label>
+          <div class="relative">
+            <input 
+              type="text" 
+              id="auth-username" 
+              required 
+              value="admin"
+              placeholder="e.g. admin, analyst_alpha" 
+              class="w-full bg-[#0a0f1d] border border-cyber-border rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyber-cyan transition font-mono"
+            >
+            <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Passphrase / Security PIN</label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="auth-password" 
+              required 
+              value="lazysoc2026"
+              placeholder="••••••••••••" 
+              class="w-full bg-[#0a0f1d] border border-cyber-border rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyber-cyan transition font-mono"
+            >
+            <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Operating Role</label>
+          <select id="auth-role" class="w-full bg-[#0a0f1d] border border-cyber-border rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyber-cyan font-mono">
+            <option value="Tier-2 SOC">Tier-2 SOC Analyst</option>
+            <option value="Tier-1 Analyst">Tier-1 Triage Specialist</option>
+            <option value="SOC Lead / Admin" selected>SOC Lead / Admin</option>
+          </select>
+        </div>
+
+        <button 
+          type="submit" 
+          id="btn-login-submit"
+          class="w-full py-2.5 rounded-xl bg-cyber-cyan hover:bg-cyber-cyan/90 text-[#070b14] font-bold text-xs flex items-center justify-center gap-2 transition font-mono shadow-lg shadow-cyber-cyan/20 cursor-pointer"
+        >
+          <i data-lucide="key" class="w-4 h-4"></i>
+          <span>Authenticate & Unlock Terminal</span>
+        </button>
+      </form>
+
+      <div class="text-center pt-1 border-t border-cyber-border/40">
+        <span class="text-[10px] text-slate-500">Air-Gapped Local Session · Zero External Telemetry</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SYSTEM SETTINGS & SECURITY HARDENING MODAL
+       ============================================================ -->
+  <div id="modal-settings" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="max-w-4xl w-full bg-[#080d1a] border border-cyber-border rounded-2xl p-5 sm:p-6 shadow-2xl font-mono space-y-5 max-h-[90vh] flex flex-col">
+      
+      <!-- HEADER -->
+      <div class="flex items-center justify-between border-b border-cyber-border/60 pb-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-sm sm:text-base flex items-center gap-2">
+              System Settings & Security Hardening
+            </h3>
+            <p class="text-[11px] text-slate-400">
+              Manage threat intel keys, air-gap defense, security headers, and audit trails.
+            </p>
+          </div>
+        </div>
+        <button onclick="closeSettingsModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- TABS INSIDE SETTINGS MODAL -->
+      <div class="flex items-center gap-2 border-b border-cyber-border/60 pb-2 flex-shrink-0 text-xs overflow-x-auto">
+        <button onclick="switchSettingsTab('keys')" id="set-tab-keys" class="px-3 py-1.5 rounded-lg font-bold bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 flex items-center gap-1.5 transition whitespace-nowrap">
+          <i data-lucide="key" class="w-3.5 h-3.5"></i> Threat Intel Keys
+        </button>
+        <button onclick="switchSettingsTab('security')" id="set-tab-security" class="px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white flex items-center gap-1.5 transition whitespace-nowrap">
+          <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> Security & Air-Gap
+        </button>
+        <button onclick="switchSettingsTab('users')" id="set-tab-users" class="px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white flex items-center gap-1.5 transition whitespace-nowrap">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i> User Management
+        </button>
+        <button onclick="switchSettingsTab('audit')" id="set-tab-audit" class="px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white flex items-center gap-1.5 transition whitespace-nowrap">
+          <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Security Audit Trail
+        </button>
+      </div>
+
+      <!-- TAB 1: THREAT INTEL KEYS -->
+      <div id="set-view-keys" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1 text-xs">
+        <div class="p-3.5 rounded-xl bg-cyber-card border border-cyber-border space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-amber-300 flex items-center gap-2">
+              <i data-lucide="cpu" class="w-4 h-4 text-amber-400"></i> Active Provider Key Pools
+            </h4>
+            <span class="text-[10px] text-slate-500">Keys are safely masked in memory</span>
+          </div>
+          <div id="settings-keys-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- ADD / UPDATE KEY FORM -->
+        <div class="p-3.5 rounded-xl bg-[#090e1c] border border-cyber-border space-y-3">
+          <h4 class="font-bold text-white flex items-center gap-2 text-xs">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-cyber-cyan"></i> Add or Update Provider API Key
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Service</label>
+              <select id="new-key-service" class="w-full bg-[#050811] border border-cyber-border rounded-lg px-2.5 py-1.5 text-slate-200">
+                <option value="virustotal">VirusTotal</option>
+                <option value="abuseipdb">AbuseIPDB</option>
+                <option value="shodan">Shodan</option>
+                <option value="otx">AlienVault OTX</option>
+                <option value="groq">Groq AI</option>
+                <option value="openai">OpenAI</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] text-slate-400 mb-1">API Key</label>
+              <div class="flex gap-2">
+                <input type="password" id="new-key-value" placeholder="Paste API key here..." class="flex-1 bg-[#050811] border border-cyber-border rounded-lg px-3 py-1.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyber-cyan">
+                <button onclick="saveApiKeyFromSettings()" class="px-3.5 py-1.5 rounded-lg bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/40 font-bold transition">Save Key</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: SECURITY & AIR-GAP HARDENING -->
+      <div id="set-view-security" class="hidden flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1 text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- AIR GAP TOGGLE -->
+          <div class="p-4 rounded-xl bg-cyber-card border border-cyber-border space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Air-Gapped Local Mode
+              </span>
+              <input type="checkbox" id="set-toggle-airgap" onchange="toggleAirGapSetting(this.checked)" class="w-4 h-4 rounded text-cyber-cyan accent-cyber-cyan cursor-pointer">
+            </div>
+            <p class="text-[11px] text-slate-400">
+              When enabled, disables all outbound network queries to external threat intelligence APIs, restricting LazySOC to local offline cache and rule heuristics.
+            </p>
+          </div>
+
+          <!-- SESSION INACTIVITY TIMEOUT -->
+          <div class="p-4 rounded-xl bg-cyber-card border border-cyber-border space-y-2">
+            <span class="font-bold text-white flex items-center gap-1.5">
+              <i data-lucide="timer" class="w-4 h-4 text-amber-400"></i> Auto-Lock Inactivity Timeout
+            </span>
+            <select id="set-timeout-minutes" onchange="updateSessionTimeoutSetting(this.value)" class="w-full bg-[#050811] border border-cyber-border rounded-lg px-3 py-1.5 text-slate-200">
+              <option value="15">15 Minutes of inactivity</option>
+              <option value="30">30 Minutes of inactivity</option>
+              <option value="60" selected>60 Minutes (1 Hour)</option>
+              <option value="240">4 Hours</option>
+              <option value="0">Never (Stay Unlocked)</option>
+            </select>
+            <p class="text-[11px] text-slate-400">
+              Terminal screen will automatically lock after selected period without analyst input.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- ACTIVE OWASP SECURITY HEADERS -->
+        <div class="p-4 rounded-xl bg-[#090e1c] border border-cyber-border space-y-3">
+          <h4 class="font-bold text-emerald-400 flex items-center gap-2">
+            <i data-lucide="check-circle" class="w-4 h-4"></i> Active HTTP Defense Headers
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+            <div class="p-2 rounded-lg bg-white/5 border border-cyber-border flex items-center justify-between">
+              <span class="text-slate-300 font-mono">X-Frame-Options:</span>
+              <span class="text-emerald-400 font-bold">DENY (Clickjack Protected)</span>
+            </div>
+            <div class="p-2 rounded-lg bg-white/5 border border-cyber-border flex items-center justify-between">
+              <span class="text-slate-300 font-mono">X-Content-Type-Options:</span>
+              <span class="text-emerald-400 font-bold">nosniff (MIME Protected)</span>
+            </div>
+            <div class="p-2 rounded-lg bg-white/5 border border-cyber-border flex items-center justify-between">
+              <span class="text-slate-300 font-mono">X-XSS-Protection:</span>
+              <span class="text-emerald-400 font-bold">1; mode=block</span>
+            </div>
+            <div class="p-2 rounded-lg bg-white/5 border border-cyber-border flex items-center justify-between">
+              <span class="text-slate-300 font-mono">Referrer-Policy:</span>
+              <span class="text-emerald-400 font-bold">strict-origin</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TAB 3: AUDIT TRAIL & CACHE -->
+      <div id="set-view-audit" class="hidden flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1 text-xs">
+        <!-- CACHE FLUSH ACTION -->
+        <div class="p-3.5 rounded-xl bg-cyber-card border border-cyber-border flex items-center justify-between gap-3">
+          <div>
+            <div class="font-bold text-white flex items-center gap-2">
+              <i data-lucide="database" class="w-4 h-4 text-purple-400"></i> Local SQLite Threat Cache
+            </div>
+            <div class="text-[11px] text-slate-400">Purge stale threat intelligence records and force fresh enrichment.</div>
+          </div>
+          <button onclick="flushCacheRecords()" class="px-3.5 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 font-bold transition flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Flush Cache
+          </button>
+        </div>
+
+        <!-- AUDIT LOG TABLE -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-white flex items-center gap-2 text-xs">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-cyber-cyan"></i> Live Security Audit Trail (Recent 50 Events)
+            </h4>
+            <button onclick="loadAuditLogs()" class="text-[11px] text-cyber-cyan hover:underline flex items-center gap-1">
+              <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+            </button>
+          </div>
+          <div id="settings-audit-container" class="overflow-x-auto rounded-xl border border-cyber-border">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: USER MANAGEMENT (ANALYST ACCOUNTS & ACCESS CONTROL) -->
+      <div id="set-view-users" class="hidden flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1 text-xs">
+        
+        <!-- TOP ACTIONS & STATS -->
+        <div class="p-3.5 rounded-xl bg-cyber-card border border-cyber-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h4 class="font-bold text-white flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Active SOC Analyst Accounts
+            </h4>
+            <p class="text-[11px] text-slate-400">
+              Manage team logins, assign tier permissions, reset credentials, or revoke compromised accounts.
+            </p>
+          </div>
+          <button onclick="loadUserManagementData()" class="px-3 py-1.5 rounded-lg bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/30 text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Users
+          </button>
+        </div>
+
+        <!-- USERS TABLE -->
+        <div class="overflow-x-auto rounded-xl border border-cyber-border bg-[#050811]">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-cyber-border/80 text-[10px] text-slate-500 uppercase bg-white/5">
+                <th class="py-2.5 px-3">Username</th>
+                <th class="py-2.5 px-3">Full Name</th>
+                <th class="py-2.5 px-3">SOC Role</th>
+                <th class="py-2.5 px-3">Created Date</th>
+                <th class="py-2.5 px-3">Last Login</th>
+                <th class="py-2.5 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="settings-users-tbody" class="divide-y divide-cyber-border/50 font-mono text-[11px]">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- CREATE NEW ANALYST FORM -->
+        <div class="p-4 rounded-xl bg-[#090e1c] border border-cyber-border space-y-3">
+          <h4 class="font-bold text-cyber-cyan flex items-center gap-2 text-xs">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Create New Analyst Account
+          </h4>
+          <form onsubmit="createUserFromSettings(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Username *</label>
+              <input type="text" id="new-user-username" required placeholder="e.g. analyst_john" class="w-full bg-[#050811] border border-cyber-border rounded-lg px-2.5 py-1.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyber-cyan">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Full Name</label>
+              <input type="text" id="new-user-fullname" placeholder="e.g. John Doe" class="w-full bg-[#050811] border border-cyber-border rounded-lg px-2.5 py-1.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyber-cyan">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">SOC Role *</label>
+              <select id="new-user-role" class="w-full bg-[#050811] border border-cyber-border rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-cyber-cyan">
+                <option value="Tier-1 Analyst">Tier-1 Analyst</option>
+                <option value="Tier-2 SOC" selected>Tier-2 SOC</option>
+                <option value="SOC Lead / Admin">SOC Lead / Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Initial Password * (min 6)</label>
+              <input type="password" id="new-user-password" required minlength="6" placeholder="Strong password" class="w-full bg-[#050811] border border-cyber-border rounded-lg px-2.5 py-1.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyber-cyan">
+            </div>
+            <div class="sm:col-span-2 md:col-span-4 flex justify-end pt-1">
+              <button type="submit" class="px-4 py-2 rounded-xl bg-cyber-cyan/20 hover:bg-cyber-cyan/30 text-cyber-cyan border border-cyber-cyan/40 font-bold text-xs transition flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> Add Analyst Account
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="pt-3 border-t border-cyber-border/60 flex items-center justify-between flex-shrink-0 text-xs">
+        <span class="text-[11px] text-slate-500">Security Configuration Persisted to Local SQLite/JSON</span>
+        <button onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 transition">
+          Close Settings
+        </button>
+      </div>
+
+    </div>
+  </div>
 
 </body>
 </html>

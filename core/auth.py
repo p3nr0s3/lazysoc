@@ -17,7 +17,7 @@ from starlette.responses import Response
 
 import core.config as config
 
-PUBLIC_PATHS = {"/healthz"}
+PUBLIC_PATHS = {"/healthz", "/api/auth/login", "/api/auth/session", "/api/auth/logout"}
 
 
 def auth_enabled() -> bool:

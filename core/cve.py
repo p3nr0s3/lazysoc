@@ -363,6 +363,8 @@ def query_cve(search: Optional[str] = None, limit: int = 30, page: int = 1) -> D
         item for item in kev_items
         if q_low in item["id"].lower() or q_low in item["description"].lower() or q_low in item["cwe"].lower()
     ]
+    # Guarantee latest published first
+    fallback_matched.sort(key=lambda x: str(x.get("published", "") or ""), reverse=True)
     start_offset = (page - 1) * limit
     end_offset = start_offset + limit
     page_fallback = fallback_matched[start_offset:end_offset]
