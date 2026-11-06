@@ -144,46 +144,105 @@
     #app-sidebar {
       transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease-in-out, box-shadow 0.28s ease;
     }
-    #app-sidebar.sidebar-collapsed {
-      width: 4.75rem !important;
-      min-width: 4.75rem !important;
+
+    /* Mobile Drawer Rules (< 1024px) */
+    @media (max-width: 1023px) {
+      #app-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        width: 17rem !important;
+        min-width: 17rem !important;
+        max-width: 85vw !important;
+        z-index: 50 !important;
+        box-shadow: 16px 0 40px rgba(0, 0, 0, 0.8) !important;
+      }
+      #app-sidebar.sidebar-collapsed {
+        width: 17rem !important;
+        min-width: 17rem !important;
+      }
+      #app-sidebar.sidebar-collapsed .sidebar-label,
+      #app-sidebar.sidebar-collapsed .sidebar-full-logo,
+      #app-sidebar.sidebar-collapsed .sidebar-footer-text,
+      #app-sidebar.sidebar-collapsed .sidebar-desc {
+        display: inline !important;
+      }
+      #app-sidebar.sidebar-collapsed .sidebar-group-title {
+        opacity: 1 !important;
+        height: auto !important;
+        overflow: visible !important;
+        border-bottom: none !important;
+        padding: 0.25rem 0.625rem !important;
+      }
+      #app-sidebar.sidebar-collapsed .tab-btn {
+        justify-content: flex-start !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+      }
+      #app-sidebar.sidebar-collapsed #sidebar-brand-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        justify-content: space-between !important;
+      }
+      #app-sidebar.sidebar-collapsed #sidebar-footer-actions {
+        flex-direction: row !important;
+      }
+      #app-sidebar.sidebar-collapsed #pool-status-indicator {
+        justify-content: flex-start !important;
+        padding: 0.5rem 0.75rem !important;
+      }
     }
-    #app-sidebar.sidebar-collapsed .sidebar-label,
-    #app-sidebar.sidebar-collapsed .sidebar-full-logo,
-    #app-sidebar.sidebar-collapsed .sidebar-footer-text,
-    #app-sidebar.sidebar-collapsed .sidebar-desc {
-      display: none !important;
-    }
-    #app-sidebar.sidebar-collapsed .sidebar-group-title {
-      opacity: 0;
-      height: 4px;
-      margin: 6px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      overflow: hidden;
-      padding: 0;
-    }
-    #app-sidebar.sidebar-collapsed .tab-btn {
-      justify-content: center !important;
-      padding-left: 0.5rem !important;
-      padding-right: 0.5rem !important;
-    }
-    #app-sidebar.sidebar-collapsed #pool-status-indicator {
-      justify-content: center !important;
-      padding: 0.5rem !important;
-    }
-    #app-sidebar.sidebar-collapsed #sidebar-footer-actions {
-      flex-direction: column !important;
-      gap: 0.5rem !important;
-    }
-    #app-sidebar.sidebar-collapsed #sidebar-footer-actions button,
-    #app-sidebar.sidebar-collapsed #sidebar-footer-actions a {
-      padding: 0.5rem !important;
-      justify-content: center !important;
-    }
-    #app-sidebar.sidebar-collapsed #sidebar-brand-container {
-      padding-left: 0.5rem !important;
-      padding-right: 0.5rem !important;
-      justify-content: center !important;
+
+    /* Desktop Sidebar Styles (>= 1024px) */
+    @media (min-width: 1024px) {
+      #app-sidebar {
+        position: sticky !important;
+        top: 0 !important;
+      }
+      #app-sidebar.sidebar-collapsed {
+        width: 4.75rem !important;
+        min-width: 4.75rem !important;
+      }
+      #app-sidebar.sidebar-collapsed .sidebar-label,
+      #app-sidebar.sidebar-collapsed .sidebar-full-logo,
+      #app-sidebar.sidebar-collapsed .sidebar-footer-text,
+      #app-sidebar.sidebar-collapsed .sidebar-desc {
+        display: none !important;
+      }
+      #app-sidebar.sidebar-collapsed .sidebar-group-title {
+        opacity: 0;
+        height: 4px;
+        margin: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        padding: 0;
+      }
+      #app-sidebar.sidebar-collapsed .tab-btn {
+        justify-content: center !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+      }
+      #app-sidebar.sidebar-collapsed #pool-status-indicator {
+        justify-content: center !important;
+        padding: 0.5rem !important;
+      }
+      #app-sidebar.sidebar-collapsed #sidebar-footer-actions {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+      }
+      #app-sidebar.sidebar-collapsed #sidebar-footer-actions button,
+      #app-sidebar.sidebar-collapsed #sidebar-footer-actions a {
+        padding: 0.5rem !important;
+        justify-content: center !important;
+      }
+      #app-sidebar.sidebar-collapsed #sidebar-brand-container {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        justify-content: center !important;
+      }
     }
 
     /* Auto-Slide Expand on Hover (Desktop) */
@@ -272,7 +331,7 @@
   <!-- ============================================================
        SIDEBAR NAVIGATION (Sleek Cyberpunk Console Dock)
        ============================================================ -->
-  <aside id="app-sidebar" class="fixed lg:sticky top-0 inset-y-0 left-0 z-50 w-64 h-screen bg-[#070b14]/95 border-r border-cyber-border flex flex-col justify-between transition-all duration-300 ease-in-out -translate-x-full lg:translate-x-0 flex-shrink-0 select-none shadow-2xl lg:shadow-none backdrop-blur-md relative group">
+  <aside id="app-sidebar" class="fixed lg:sticky top-0 inset-y-0 left-0 z-50 w-64 h-screen bg-[#070b14]/95 border-r border-cyber-border flex flex-col justify-between transition-all duration-300 ease-in-out -translate-x-full lg:translate-x-0 flex-shrink-0 select-none shadow-2xl lg:shadow-none backdrop-blur-md group">
     
     <!-- SLIDE HANDLE (DRAG & CLICK AFFORDANCE) -->
     <div id="sidebar-slide-handle" class="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-14 rounded-r-xl bg-[#090e1a]/95 border-r border-t border-b border-cyber-border hover:border-cyber-cyan/70 items-center justify-center cursor-ew-resize text-slate-400 hover:text-cyber-cyan transition-all shadow-xl group z-50 select-none" title="Slide / Swipe Sidebar">
@@ -3485,9 +3544,11 @@ Content-Type: text/html; charset=UTF-8
       if (newState) {
         sidebar.classList.remove('-translate-x-full');
         if (backdrop) backdrop.classList.remove('hidden');
+        document.body.classList.add('overflow-y-hidden');
       } else {
         sidebar.classList.add('-translate-x-full');
         if (backdrop) backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-y-hidden');
       }
       lucide.createIcons();
     }
@@ -3509,14 +3570,17 @@ Content-Type: text/html; charset=UTF-8
       lucide.createIcons();
     }
 
-    // Auto-restore sidebar minimize preference on page load
+    // Auto-restore sidebar minimize preference on page load (Desktop only)
     (function initSidebarState() {
       try {
-        if (localStorage.getItem('lazysoc_sidebar_collapsed') === '1') {
-          const sidebar = document.getElementById('app-sidebar');
-          if (sidebar) sidebar.classList.add('sidebar-collapsed');
+        const sidebar = document.getElementById('app-sidebar');
+        if (!sidebar) return;
+        if (window.innerWidth >= 1024 && localStorage.getItem('lazysoc_sidebar_collapsed') === '1') {
+          sidebar.classList.add('sidebar-collapsed');
           const icon = document.getElementById('sidebar-toggle-icon');
           if (icon) icon.setAttribute('data-lucide', 'panel-left-open');
+        } else if (window.innerWidth < 1024) {
+          sidebar.classList.remove('sidebar-collapsed');
         }
       } catch (e) {}
     })();
