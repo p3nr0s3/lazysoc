@@ -109,7 +109,20 @@ from core.soc_analyst import (
 )
 
 
-app = FastAPI(title="LazySOC Threat Triage & Investigation Platform", version="3.0.0")
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if not WATCHLIST_FILE.exists():
+        try:
+            seed_full_catalog_watchlist(merge=False)
+        except Exception:
+            pass
+    yield
+
+
+app = FastAPI(title="LazySOC Threat Triage & Investigation Platform", version="3.0.0", lifespan=lifespan)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -1169,16 +1182,6 @@ def update_user_role_endpoint(username: str, req: UpdateRoleRequest, request: Re
     if not ok:
         raise HTTPException(status_code=400, detail=msg)
     return {"success": True, "message": msg}
-
-
-@app.on_event("startup")
-def init_persistent_watchlist():
-    """Ensures data/watchlist.json is initialized with full enterprise software checklist."""
-    if not WATCHLIST_FILE.exists():
-        try:
-            seed_full_catalog_watchlist(merge=False)
-        except Exception:
-            pass
 
 
 @app.get("/", response_class=HTMLResponse)

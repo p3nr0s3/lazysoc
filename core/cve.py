@@ -114,7 +114,7 @@ def fetch_cisa_kev_recent(limit: int = 50) -> List[Dict[str, Any]]:
             sorted_vulns = fetch_kev_catalog()
             if sorted_vulns:
                 formatted = []
-                for v in sorted_vulns[:500]:
+                for v in sorted_vulns:
                     cve_id = v.get("cveID", "")
                     vendor = v.get("vendorProject", "Vendor")
                     prod = v.get("product", "Product")
@@ -356,13 +356,18 @@ def query_cve(search: Optional[str] = None, limit: int = 30, page: int = 1) -> D
     except Exception:
         pass
 
-    # 4. Fallback: Search inside CISA KEV items
-    kev_items = fetch_cisa_kev_recent(limit=500)
+    # 4. Fallback: Search inside CISA KEV items & pre-seeded critical KEV catalog
+    kev_items = fetch_cisa_kev_recent(limit=2500)
     q_low = query.lower()
     fallback_matched = [
         item for item in kev_items
         if q_low in item["id"].lower() or q_low in item["description"].lower() or q_low in item["cwe"].lower()
     ]
+    if not fallback_matched:
+        fallback_matched = [
+            item for item in FALLBACK_KEV_ITEMS
+            if q_low in item["id"].lower() or q_low in item["description"].lower() or q_low in item["cwe"].lower()
+        ]
     # Guarantee latest published first
     fallback_matched.sort(key=lambda x: str(x.get("published", "") or ""), reverse=True)
     start_offset = (page - 1) * limit
