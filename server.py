@@ -11,7 +11,7 @@ from typing import List, Optional, Dict, Any
 from pathlib import Path
 import json
 
-from core.config import BASE_DIR, CACHE_TTL_HOURS, CORS_ALLOWED_ORIGINS, STATIC_DIR
+from core.config import BASE_DIR, CACHE_TTL_HOURS, CORS_ALLOWED_ORIGINS, STATIC_DIR, WATCHLIST_FILE
 from core.parser import parse_raw_text, parse_uploaded_file, IoCItem
 from core.key_manager import (
     KeyManager,
@@ -52,6 +52,9 @@ from core.watchlist_import import (
     add_or_update_watchlist_item,
     delete_watchlist_item,
     seed_default_watchlist,
+    seed_full_catalog_watchlist,
+    toggle_watchlist_item,
+    batch_toggle_watchlist,
 )
 from core.darkweb import (
     get_paginated_ransomware_victims,
@@ -287,6 +290,21 @@ class WatchlistItemRequest(BaseModel):
 class WatchlistDeleteItemRequest(BaseModel):
     asset_id: str
     owner: Optional[str] = None
+
+
+class WatchlistToggleRequest(BaseModel):
+    asset_id: str
+    enabled: Optional[bool] = None
+
+
+class WatchlistBatchToggleRequest(BaseModel):
+    asset_ids: Optional[List[str]] = None
+    enabled: bool = True
+
+
+class WatchlistSeedCatalogRequest(BaseModel):
+    merge: bool = True
+    default_owner: Optional[str] = "Internal Enterprise"
 
 
 class ScriptScanRequest(BaseModel):
@@ -620,6 +638,29 @@ def add_watchlist_item_endpoint(req: WatchlistItemRequest):
 def delete_watchlist_item_endpoint(req: WatchlistDeleteItemRequest):
     """Deletes an asset or a specific deployment from the watchlist."""
     return delete_watchlist_item(asset_id=req.asset_id, owner=req.owner)
+
+
+@app.post("/api/watchlist/toggle")
+def toggle_watchlist_endpoint(req: WatchlistToggleRequest):
+    """Toggles or sets the active/enabled status of a watchlist asset."""
+    try:
+        return toggle_watchlist_item(asset_id=req.asset_id, enabled=req.enabled)
+    except WatchlistImportError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/watchlist/batch-toggle")
+def batch_toggle_watchlist_endpoint(req: WatchlistBatchToggleRequest):
+    """Toggles or sets active/enabled status in bulk for multiple or all assets."""
+    return batch_toggle_watchlist(asset_ids=req.asset_ids, enabled=req.enabled)
+
+
+@app.post("/api/watchlist/seed-catalog")
+def seed_watchlist_catalog_endpoint(req: Optional[WatchlistSeedCatalogRequest] = None):
+    """Loads all 70+ products from product catalog into watchlist (merging with existing)."""
+    merge = req.merge if req else True
+    owner = req.default_owner if req and req.default_owner else "Internal Enterprise"
+    return seed_full_catalog_watchlist(merge=merge, default_owner=owner)
 
 
 @app.post("/api/watchlist/defaults")
@@ -1128,6 +1169,17 @@ def update_user_role_endpoint(username: str, req: UpdateRoleRequest, request: Re
     if not ok:
         raise HTTPException(status_code=400, detail=msg)
     return {"success": True, "message": msg}
+
+
+@app.on_event("startup")
+def init_persistent_watchlist():
+    """Ensures data/watchlist.json is initialized with full enterprise software checklist."""
+    if not WATCHLIST_FILE.exists():
+        try:
+            seed_full_catalog_watchlist(merge=False)
+        except Exception:
+            pass
+
 
 @app.get("/", response_class=HTMLResponse)
 

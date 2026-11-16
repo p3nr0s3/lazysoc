@@ -42,6 +42,7 @@ def _term_pattern(terms: List[str], case_sensitive: bool) -> Optional[re.Pattern
 
 def _prepare_asset(raw: Dict[str, Any]) -> Dict[str, Any]:
     asset = dict(raw)
+    asset["enabled"] = raw.get("enabled", True)
     asset["criticality"] = (asset.get("criticality") or "normal").lower()
     if asset["criticality"] not in CRITICALITY_WEIGHT:
         asset["criticality"] = "normal"
@@ -83,7 +84,7 @@ def _public_deployments(asset: Dict[str, Any], owner: Optional[str]) -> List[Dic
 
 
 def _assets_for_owner(owner: Optional[str]) -> List[Dict[str, Any]]:
-    assets = load_watchlist()
+    assets = [a for a in load_watchlist() if a.get("enabled", True)]
     if not owner:
         return assets
     return [a for a in assets if any(d["owner"].lower() == owner.lower() for d in a["deployments"])]
@@ -93,11 +94,14 @@ def get_watchlist_summary() -> Dict[str, Any]:
     """Returns owners and assets for the UI (without compiled regex internals)."""
     assets = load_watchlist()
     owners = sorted({d["owner"] for a in assets for d in a["deployments"]}, key=lambda o: (o != "Internal", o.lower()))
+    active_count = sum(1 for a in assets if a.get("enabled", True))
     return {
         "loaded": bool(assets),
         "error": _state["error"],
         "owners": owners,
         "total_assets": len(assets),
+        "active_assets": active_count,
+        "disabled_assets": len(assets) - active_count,
         "assets": [
             {
                 "id": a["id"],
@@ -105,6 +109,7 @@ def get_watchlist_summary() -> Dict[str, Any]:
                 "product": a.get("product", ""),
                 "category": a.get("category", ""),
                 "criticality": a["criticality"],
+                "enabled": a.get("enabled", True),
                 "owners": sorted({d["owner"] for d in a["deployments"]}),
                 "deployments": _public_deployments(a, None),
             }

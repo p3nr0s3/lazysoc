@@ -2846,9 +2846,20 @@
             <button onclick="openAddWatchlistModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1.5 transition">
               <i data-lucide="plus" class="w-4 h-4"></i> + Add Watchlist Item
             </button>
-            <button onclick="seedWatchlistDefaults()" class="px-3.5 py-2 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/40 font-bold flex items-center gap-1.5 transition">
+            <button onclick="seedWatchlistFullCatalog()" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1.5 transition" title="Muat seluruh katalog software (70+ tools) ke dalam checklist">
+              <i data-lucide="boxes" class="w-4 h-4"></i> Load Full Catalog (70+ Tools)
+            </button>
+            <button onclick="seedWatchlistDefaults()" class="px-3.5 py-2 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/40 font-bold flex items-center gap-1.5 transition" title="Muat 8 preset software enterprise terpopuler">
               <i data-lucide="sparkles" class="w-4 h-4"></i> Load Popular Defaults
             </button>
+            <div class="flex items-center gap-1 border-l border-cyber-border/70 pl-2">
+              <button onclick="batchToggleWatchlist(true)" class="px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border font-bold flex items-center gap-1 transition text-[11px]" title="Check / Enable Semua Software">
+                <i data-lucide="check-square" class="w-3.5 h-3.5 text-emerald-400"></i> Check All
+              </button>
+              <button onclick="batchToggleWatchlist(false)" class="px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-cyber-border font-bold flex items-center gap-1 transition text-[11px]" title="Uncheck / Mute Semua Software">
+                <i data-lucide="square" class="w-3.5 h-3.5 text-slate-400"></i> Uncheck All
+              </button>
+            </div>
             <button onclick="viewWatchlistInCyberFeeds()" class="px-3.5 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 font-bold flex items-center gap-1.5 transition" title="Lihat semua artikel terkait Watchlist di Cyber Feeds">
               <i data-lucide="rss" class="w-4 h-4"></i> View in Cyber Feeds
             </button>
@@ -2859,7 +2870,7 @@
         </div>
 
         <!-- SEARCH & FILTER BAR -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
           <div>
             <input 
               type="text" 
@@ -2882,6 +2893,13 @@
               <option value="normal">Normal Only</option>
             </select>
           </div>
+          <div>
+            <select id="wl-filter-status" onchange="renderWatchlistTableView()" class="w-full bg-[#070b14] border border-cyber-border rounded-lg px-3 py-2 text-slate-200 focus:border-amber-400 focus:outline-none">
+              <option value="">All Status (Checked & Unchecked)</option>
+              <option value="active">Active Only (Checked)</option>
+              <option value="inactive">Inactive Only (Unchecked)</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -2890,7 +2908,7 @@
         <div class="flex items-center justify-between border-b border-cyber-border/60 pb-3 text-xs">
           <h3 class="font-bold text-white flex items-center gap-2">
             <i data-lucide="server" class="w-4 h-4 text-amber-400"></i>
-            Tracked Assets & Infrastructure (<span id="wl-table-count">0</span> products)
+            Tracked Assets & Infrastructure (<span id="wl-table-count">0</span> products &mdash; <span id="wl-table-active" class="text-emerald-400 font-bold">0</span> Active / <span id="wl-table-inactive" class="text-slate-500 font-bold">0</span> Unchecked)
           </h3>
           <span class="text-slate-400 text-[11px]">Auto-correlated against CISA KEV and CVE catalogs</span>
         </div>

@@ -3,8 +3,6 @@
 import os
 import shutil
 from pathlib import Path
-from dotenv import load_dotenv
-
 # Base paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -24,8 +22,11 @@ if legacy_cache.exists() and not CACHE_DB_FILE.exists():
     except Exception:
         pass
 
-# Load .env if present
-load_dotenv(BASE_DIR / ".env")
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / ".env")
+except ImportError:
+    pass
 
 # Settings
 CACHE_TTL_HOURS = int(os.getenv("CACHE_TTL_HOURS", "24"))

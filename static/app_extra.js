@@ -981,6 +981,69 @@ async function deleteWatchlistItem(assetId, owner) {
   }
 }
 
+async function toggleWatchlistActive(assetId, targetState) {
+  try {
+    const resp = await fetch('/api/watchlist/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asset_id: assetId, enabled: targetState })
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      if (typeof loadWatchlistSummary === 'function') await loadWatchlistSummary();
+      renderWatchlistTableView();
+    } else {
+      alert('Failed to toggle status: ' + (data.detail || 'Unknown error'));
+    }
+  } catch (e) {
+    alert('Error toggling status: ' + e.message);
+  }
+}
+
+async function batchToggleWatchlist(enabled) {
+  const actionName = enabled ? 'Check (Enable) All' : 'Uncheck (Disable) All';
+  if (!confirm(`Are you sure you want to ${actionName} products in the watchlist?`)) return;
+
+  try {
+    const resp = await fetch('/api/watchlist/batch-toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: enabled })
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      if (typeof loadWatchlistSummary === 'function') await loadWatchlistSummary();
+      renderWatchlistTableView();
+    } else {
+      alert('Failed to update: ' + (data.detail || 'Unknown error'));
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function seedWatchlistFullCatalog() {
+  if (!confirm('Load the FULL catalog of 70+ enterprise software tools into your checklist? (Your custom items and settings will be preserved)')) return;
+
+  try {
+    const resp = await fetch('/api/watchlist/seed-catalog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ merge: true })
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      if (typeof loadWatchlistSummary === 'function') await loadWatchlistSummary();
+      renderWatchlistTableView();
+      alert(`Success! Watchlist now has ${data.total_assets} enterprise tools in your checklist.`);
+    } else {
+      alert('Failed to load full catalog: ' + (data.detail || 'Unknown error'));
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
 async function seedWatchlistDefaults() {
   if (!confirm('Load standard enterprise defaults (FortiOS, PAN-OS, Exchange, Windows Server, ESXi, Cisco IOS XE, Ivanti, Log4j)?')) return;
 
@@ -1035,8 +1098,11 @@ async function renderWatchlistTableView() {
 
   const container = document.getElementById('watchlist-table-container');
   const countEl = document.getElementById('wl-table-count');
+  const activeEl = document.getElementById('wl-table-active');
+  const inactiveEl = document.getElementById('wl-table-inactive');
   const ownerFilter = document.getElementById('wl-filter-owner')?.value || '';
   const critFilter = document.getElementById('wl-filter-crit')?.value || '';
+  const statusFilter = document.getElementById('wl-filter-status')?.value || '';
   const searchFilter = (document.getElementById('wl-filter-search')?.value || '').toLowerCase().trim();
 
   if (!container) return;
@@ -1052,9 +1118,24 @@ async function renderWatchlistTableView() {
     });
   }
 
-  let assets = (typeof watchlistSummary !== 'undefined' && watchlistSummary && watchlistSummary.assets) ? watchlistSummary.assets : [];
+  let rawAssets = (typeof watchlistSummary !== 'undefined' && watchlistSummary && watchlistSummary.assets) ? watchlistSummary.assets : [];
+
+  const totalAll = rawAssets.length;
+  const activeAll = rawAssets.filter(a => a.enabled !== false).length;
+  const inactiveAll = totalAll - activeAll;
+
+  if (activeEl) activeEl.innerText = activeAll;
+  if (inactiveEl) inactiveEl.innerText = inactiveAll;
+
+  let assets = [...rawAssets];
 
   // Apply filters
+  if (statusFilter === 'active') {
+    assets = assets.filter(a => a.enabled !== false);
+  } else if (statusFilter === 'inactive') {
+    assets = assets.filter(a => a.enabled === false);
+  }
+
   if (ownerFilter) {
     assets = assets.filter(a => (a.owners || []).some(o => o.toLowerCase() === ownerFilter.toLowerCase()));
   }
@@ -1075,11 +1156,20 @@ async function renderWatchlistTableView() {
     container.innerHTML = `
       <div class="p-8 text-center space-y-3 text-xs">
         <div class="text-slate-400">No watchlist products match current filters.</div>
-        <button onclick="seedWatchlistDefaults()" class="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold hover:bg-amber-500/30 transition">
-          Load Popular Enterprise Defaults
-        </button>
+        <div class="flex items-center justify-center gap-2 flex-wrap">
+          <button onclick="seedWatchlistFullCatalog()" class="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold hover:bg-emerald-500/30 transition flex items-center gap-1.5">
+            <i data-lucide="boxes" class="w-4 h-4"></i> Load Full Catalog (70+ Software Checklist)
+          </button>
+          <button onclick="seedWatchlistDefaults()" class="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold hover:bg-amber-500/30 transition">
+            Load Popular Defaults (8 Tools)
+          </button>
+          <button onclick="openAddWatchlistModal()" class="px-4 py-2 rounded-xl bg-white/5 text-slate-300 border border-cyber-border hover:bg-white/10 transition">
+            + Add Custom Software
+          </button>
+        </div>
       </div>
     `;
+    if (window.lucide) window.lucide.createIcons();
     return;
   }
 
@@ -1093,6 +1183,7 @@ async function renderWatchlistTableView() {
     <table class="w-full text-left border-collapse text-xs">
       <thead>
         <tr class="border-b border-cyber-border/80 text-[10px] text-slate-500 uppercase">
+          <th class="py-2.5 px-3 text-center">Checklist</th>
           <th class="py-2.5 px-3">Criticality</th>
           <th class="py-2.5 px-3">Product & Vendor</th>
           <th class="py-2.5 px-3">Category</th>
@@ -1103,6 +1194,7 @@ async function renderWatchlistTableView() {
       </thead>
       <tbody class="divide-y divide-cyber-border/60">
         ${assets.map(a => {
+          const isEnabled = a.enabled !== false;
           const prodName = a.product || '';
           const prodLower = prodName.toLowerCase();
           const feedMatches = (typeof allFeedArticles !== 'undefined' && Array.isArray(allFeedArticles))
@@ -1113,14 +1205,28 @@ async function renderWatchlistTableView() {
             : 0;
 
           return `
-          <tr class="hover:bg-white/5 transition">
+          <tr class="${isEnabled ? 'hover:bg-white/5' : 'opacity-40 bg-black/30 hover:opacity-75'} transition">
+            <td class="py-3 px-3 text-center whitespace-nowrap">
+              <button 
+                onclick="toggleWatchlistActive('${escapeHtml(a.id)}', ${!isEnabled})" 
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                  isEnabled 
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/25' 
+                    : 'bg-white/5 text-slate-500 border-cyber-border hover:text-slate-300 hover:bg-white/10'
+                }"
+                title="${isEnabled ? 'Active in monitoring - click to uncheck' : 'Unchecked / ignored - click to check'}"
+              >
+                <i data-lucide="${isEnabled ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${isEnabled ? 'text-emerald-400' : 'text-slate-500'}"></i>
+                <span>${isEnabled ? 'Active' : 'Unchecked'}</span>
+              </button>
+            </td>
             <td class="py-3 px-3">
               <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${critStyles[a.criticality] || critStyles.normal}">
                 ${(a.criticality || 'normal').toUpperCase()}
               </span>
             </td>
             <td class="py-3 px-3">
-              <div class="font-bold text-white text-xs">${escapeHtml(prodName)}</div>
+              <div class="font-bold ${isEnabled ? 'text-white' : 'text-slate-400'} text-xs">${escapeHtml(prodName)}</div>
               <div class="text-[11px] text-slate-400">${escapeHtml(a.vendor || 'Custom')}</div>
             </td>
             <td class="py-3 px-3 text-slate-300">${escapeHtml(a.category || 'General')}</td>
