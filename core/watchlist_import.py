@@ -584,6 +584,7 @@ def add_or_update_watchlist_item(
             "vendor_aliases": vendor_aliases,
             "kev": kev,
             "cpe": cpe,
+            "enabled": True,
             "deployments": [new_dep]
         }
         assets.append(new_asset)
@@ -591,6 +592,113 @@ def add_or_update_watchlist_item(
     current_data["assets"] = assets
     backup = save_watchlist(current_data)
     return {"success": True, "asset_id": asset_id, "backup": backup, "total_assets": len(assets)}
+
+
+def toggle_watchlist_item(asset_id: str, enabled: Optional[bool] = None) -> Dict[str, Any]:
+    """Toggles or sets the active/enabled status of an asset in watchlist.json."""
+    current_data = read_current_watchlist()
+    assets = current_data.get("assets", [])
+    target = next((a for a in assets if a.get("id") == asset_id), None)
+    if not target:
+        raise WatchlistImportError(f"Asset '{asset_id}' tidak ditemukan di watchlist.")
+
+    if enabled is None:
+        target["enabled"] = not target.get("enabled", True)
+    else:
+        target["enabled"] = bool(enabled)
+
+    backup = save_watchlist(current_data)
+    return {
+        "success": True,
+        "asset_id": asset_id,
+        "enabled": target["enabled"],
+        "backup": backup,
+        "total_assets": len(assets),
+    }
+
+
+def batch_toggle_watchlist(asset_ids: Optional[List[str]] = None, enabled: bool = True) -> Dict[str, Any]:
+    """Toggles or sets active/enabled status for a list of assets or all assets."""
+    current_data = read_current_watchlist()
+    assets = current_data.get("assets", [])
+    target_ids = set(asset_ids) if asset_ids else None
+
+    count = 0
+    for a in assets:
+        if target_ids is None or a.get("id") in target_ids:
+            a["enabled"] = bool(enabled)
+            count += 1
+
+    backup = save_watchlist(current_data)
+    return {
+        "success": True,
+        "updated_count": count,
+        "enabled": bool(enabled),
+        "backup": backup,
+        "total_assets": len(assets),
+    }
+
+
+def seed_full_catalog_watchlist(merge: bool = True, default_owner: str = "Internal Enterprise") -> Dict[str, Any]:
+    """
+    Seeds full enterprise product catalog (70+ software tools) into data/watchlist.json.
+    If merge=True, preserves all existing assets (and user's manual additions),
+    only adding missing catalog products.
+    """
+    catalog = load_catalog()
+    current_data = read_current_watchlist() if merge else {"version": 1, "assets": []}
+    existing_assets = {a.get("id"): a for a in current_data.get("assets", []) if a.get("id")}
+
+    added_count = 0
+    updated_assets = list(current_data.get("assets", []))
+
+    for p in catalog:
+        pid = p.get("id")
+        if not pid:
+            continue
+        if pid in existing_assets:
+            # Asset already exists, keep existing configuration, deployments, and enabled state
+            continue
+
+        new_asset = {
+            "id": pid,
+            "vendor": p.get("vendor", ""),
+            "product": p.get("product", ""),
+            "category": p.get("category", "General"),
+            "criticality": p.get("criticality", "normal"),
+            "aliases": p.get("aliases", [p.get("product", "")]),
+            "vendor_aliases": p.get("vendor_aliases", [p.get("vendor", "")]),
+            "kev": p.get("kev", []),
+            "cpe": p.get("cpe", []),
+            "enabled": True,
+            "deployments": [
+                {
+                    "owner": default_owner,
+                    "version": "",
+                    "note": f"Catalog preset ({p.get('category', '')})"
+                }
+            ]
+        }
+        updated_assets.append(new_asset)
+        added_count += 1
+
+    # Ensure every asset has enabled field
+    for a in updated_assets:
+        if "enabled" not in a:
+            a["enabled"] = True
+
+    data_to_save = {
+        "version": 1,
+        "source": "LazySOC Enterprise Full Catalog Checklist (70+ Software)",
+        "assets": updated_assets,
+    }
+    backup = save_watchlist(data_to_save)
+    return {
+        "success": True,
+        "total_assets": len(updated_assets),
+        "added_count": added_count,
+        "backup": backup,
+    }
 
 
 def delete_watchlist_item(asset_id: str, owner: Optional[str] = None) -> Dict[str, Any]:
@@ -614,12 +722,28 @@ def delete_watchlist_item(asset_id: str, owner: Optional[str] = None) -> Dict[st
     return {"success": True, "backup": backup, "total_assets": len(assets)}
 
 
-def seed_default_watchlist() -> Dict[str, Any]:
+def seed_default_watchlist(merge: bool = True) -> Dict[str, Any]:
     """Seeds default popular enterprise products into data/watchlist.json."""
-    data = {
-        "version": 1,
-        "source": "LazySOC Popular Enterprise Critical Tools Default Seed",
-        "assets": DEFAULT_POPULAR_ASSETS
-    }
+    if not merge:
+        data = {
+            "version": 1,
+            "source": "LazySOC Popular Enterprise Critical Tools Default Seed",
+            "assets": [dict(a, enabled=True) for a in DEFAULT_POPULAR_ASSETS],
+        }
+    else:
+        current_data = read_current_watchlist()
+        existing_assets = {a.get("id"): a for a in current_data.get("assets", []) if a.get("id")}
+        updated_assets = list(current_data.get("assets", []))
+        for item in DEFAULT_POPULAR_ASSETS:
+            pid = item.get("id")
+            if pid not in existing_assets:
+                asset_copy = dict(item)
+                asset_copy["enabled"] = True
+                updated_assets.append(asset_copy)
+        data = {
+            "version": 1,
+            "source": "LazySOC Enterprise Tools Watchlist",
+            "assets": updated_assets,
+        }
     backup = save_watchlist(data)
-    return {"success": True, "seeded_count": len(DEFAULT_POPULAR_ASSETS), "backup": backup}
+    return {"success": True, "seeded_count": len(data["assets"]), "backup": backup}
