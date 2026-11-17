@@ -462,9 +462,85 @@ def fetch_live_ransomware_victims(limit: int = 50) -> List[Dict[str, Any]]:
     return normalized if normalized else FALLBACK_VICTIMS[:limit]
 
 
+RANSOMLOOK_API = "https://www.ransomlook.io/api"
+_RL_CACHE: Dict[str, Tuple[float, Any]] = {}
+
+
+def fetch_ransomlook_recent(limit: int = 50, timeout: float = 6.0) -> List[Dict[str, Any]]:
+    """Fetches live ransomware disclosures from Ransomlook.io mirror (keyless)."""
+    now = time.time()
+    cached = _RL_CACHE.get("recent")
+    if cached and now - cached[0] < 60:
+        return cached[1][:limit]
+
+    headers = {"User-Agent": "LazySOC-CyberSec/3.0 (+https://github.com/p3nr0s3/lazysoc)"}
+    try:
+        resp = requests.get(f"{RANSOMLOOK_API}/recent", headers=headers, timeout=timeout)
+        if resp.status_code == 200:
+            data = resp.json()
+            out = []
+            for p in (data or []):
+                if not isinstance(p, dict):
+                    continue
+                victim = p.get("post_title") or (p.get("description", "") or "")[:80] or "Unknown Victim"
+                out.append({
+                    "group": p.get("group_name") or "Unknown Cartel",
+                    "victim": victim,
+                    "discovered": str(p.get("discovered") or "")[:19].replace("T", " "),
+                    "url": p.get("link") or "",
+                    "source": "Ransomlook.io Live Mirror",
+                })
+            _RL_CACHE["recent"] = (now, out)
+            return out[:limit]
+    except Exception:
+        pass
+    return []
+
+
+def search_ransomlook(query: str, timeout: float = 6.0) -> List[Dict[str, Any]]:
+    """Searches Ransomlook.io post database across 570+ ransomware groups."""
+    q = (query or "").strip().lower()
+    if not q:
+        return []
+
+    now = time.time()
+    cache_key = f"search_{q}"
+    cached = _RL_CACHE.get(cache_key)
+    if cached and now - cached[0] < 60:
+        return cached[1]
+
+    from urllib.parse import quote_plus
+    headers = {"User-Agent": "LazySOC-CyberSec/3.0 (+https://github.com/p3nr0s3/lazysoc)"}
+    try:
+        resp = requests.get(f"{RANSOMLOOK_API}/search?q={quote_plus(q)}", headers=headers, timeout=timeout)
+        if resp.status_code == 200:
+            posts = resp.json().get("posts", []) or []
+            out = []
+            for p in posts:
+                if not isinstance(p, dict):
+                    continue
+                out.append({
+                    "cartel": p.get("group_name") or "Unknown Cartel",
+                    "victim_name": p.get("post_title") or p.get("title") or q,
+                    "published_date": str(p.get("discovered") or "")[:19].replace("T", " "),
+                    "onion_leak_url": p.get("link") or "",
+                    "claimed_leak_data": p.get("description") or "Disclosed on ransomware cartel leak site.",
+                    "country": p.get("country") or "Global",
+                    "sector": "Enterprise",
+                    "website": q,
+                    "source": "Ransomlook.io Intelligence",
+                })
+            _RL_CACHE[cache_key] = (now, out)
+            return out
+    except Exception:
+        pass
+    return []
+
+
 def search_ransomware_victims(domain_or_name: str) -> Tuple[List[Dict[str, Any]], int]:
     """
-    Performs full deep-search across all 33,000+ darkweb ransomware records.
+    Performs full deep-search across all 33,000+ darkweb ransomware records
+    from ransomware.live and live Ransomlook.io API.
     Returns (matched_victims, total_scanned_count).
     """
     posts = get_all_ransomware_posts()
@@ -478,6 +554,8 @@ def search_ransomware_victims(domain_or_name: str) -> Tuple[List[Dict[str, Any]]
     slug = query.split(".")[0]
 
     matches = []
+    seen_keys = set()
+
     for item in posts:
         web = str(item.get("website") or "").lower()
         title = str(item.get("post_title") or "").lower()
@@ -492,16 +570,32 @@ def search_ransomware_victims(domain_or_name: str) -> Tuple[List[Dict[str, Any]]
             is_match = True
 
         if is_match:
-            matches.append({
-                "cartel": item.get("group_name") or "Unknown Cartel",
-                "victim_name": item.get("post_title") or query,
-                "published_date": str(item.get("published") or item.get("discovered") or "")[:19].replace("T", " "),
-                "onion_leak_url": item.get("post_url") or "",
-                "claimed_leak_data": item.get("description") or "Corporate data exfiltrated and staged on leak blog.",
-                "country": item.get("country") or "Global",
-                "sector": item.get("activity") or "Enterprise",
-                "website": item.get("website") or query
-            })
+            c = item.get("group_name") or "Unknown Cartel"
+            v = item.get("post_title") or query
+            key = (c.lower(), v.lower())
+            if key not in seen_keys:
+                seen_keys.add(key)
+                matches.append({
+                    "cartel": c,
+                    "victim_name": v,
+                    "published_date": str(item.get("published") or item.get("discovered") or "")[:19].replace("T", " "),
+                    "onion_leak_url": item.get("post_url") or "",
+                    "claimed_leak_data": item.get("description") or "Corporate data exfiltrated and staged on leak blog.",
+                    "country": item.get("country") or "Global",
+                    "sector": item.get("activity") or "Enterprise",
+                    "website": item.get("website") or query
+                })
+
+    # Cross-reference with live Ransomlook.io API
+    try:
+        rl_results = search_ransomlook(slug if len(slug) >= 4 else query)
+        for r in rl_results:
+            key = (r["cartel"].lower(), r["victim_name"].lower())
+            if key not in seen_keys:
+                seen_keys.add(key)
+                matches.append(r)
+    except Exception:
+        pass
 
     matches.sort(key=lambda x: str(x.get("published_date") or ""), reverse=True)
     return matches, len(posts)

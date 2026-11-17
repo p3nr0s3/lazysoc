@@ -21,7 +21,7 @@ from core.key_manager import (
 from core.clients.virustotal import VirusTotalClient
 from core.clients.abuseipdb import AbuseIPDBClient
 from core.mail_health import MailHealthChecker
-from core.recon import perform_recon
+from core.recon import perform_recon, get_favicon_intel, typosquat_triage
 from core.email_analyzer import EmailAnalyzer
 from core.engine import (
     EnrichmentEngine,
@@ -62,10 +62,13 @@ from core.darkweb import (
     fetch_live_ransomware_victims,
     get_ransomware_groups_list,
     get_darkweb_iocs_list,
+    fetch_ransomlook_recent,
+    search_ransomlook,
 )
 from core.credential_leak import (
     analyze_domain_darkweb_exposure,
     check_password_pwned_k_anonymity,
+    fetch_hudsonrock_infostealer,
 )
 from core.script_scanner import scan_script_payload
 from core.ai_summary import summarize_article
@@ -97,7 +100,7 @@ from core.playbooks import get_all_playbooks, get_playbook, generate_playbook_re
 from core.url_tracer import trace_url_redirects
 from core.deobfuscator import deobfuscate_payload
 from core.hunting import generate_single_ioc_hunt_queries
-from core.containment import generate_containment_scripts
+from core.containment import generate_containment_scripts, generate_takedown_dossier
 from core.mitre import get_mitre_matrix_data, analyze_mitre_coverage, export_mitre_navigator_layer
 from core.soc_analyst import (
     lookup_windows_event,
@@ -254,6 +257,16 @@ class ContainmentRequest(BaseModel):
     iocs: List[Dict[str, Any]]
     rule_name: Optional[str] = "LAZYSOC_BLOCK"
     zone: Optional[str] = "untrust"
+
+
+class TakedownDossierRequest(BaseModel):
+    target: str
+    threat_type: Optional[str] = "Phishing & Credential Harvester"
+    brand_targeted: Optional[str] = None
+    evidence_notes: Optional[str] = None
+    ip_address: Optional[str] = None
+    asn_info: Optional[str] = None
+    abuse_contacts: Optional[List[str]] = None
 
 
 class MitreExportRequest(BaseModel):
@@ -444,6 +457,24 @@ def network_recon_endpoint(target: str):
     if not tgt:
         raise HTTPException(status_code=400, detail="Target cannot be empty.")
     return perform_recon(tgt)
+
+
+@app.get("/api/recon/favicon")
+def recon_favicon_endpoint(domain: str):
+    """MurmurHash3 & MD5 favicon intelligence for pivoting in Shodan, FOFA, Censys."""
+    dom = domain.strip()
+    if not dom:
+        raise HTTPException(status_code=400, detail="Domain cannot be empty.")
+    return get_favicon_intel(dom)
+
+
+@app.get("/api/recon/typosquat")
+def recon_typosquat_endpoint(domain: str, limit: int = 15):
+    """Typosquatting permutation analysis with active DNS (A & MX) phishing-ready triage."""
+    dom = domain.strip()
+    if not dom:
+        raise HTTPException(status_code=400, detail="Domain cannot be empty.")
+    return {"domain": dom, "results": typosquat_triage(dom, max_checks=max(1, min(limit, 30)))}
 
 
 @app.post("/api/analyze-eml")
@@ -730,6 +761,30 @@ def check_password_pwned_endpoint(req: PasswordPwnedRequest):
     return check_password_pwned_k_anonymity(req.password)
 
 
+@app.get("/api/darkweb/ransomlook")
+def darkweb_ransomlook_search_endpoint(query: str):
+    """Searches 570+ ransomware groups on Ransomlook.io for victim disclosures."""
+    q = query.strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    return {"query": q, "results": search_ransomlook(q)}
+
+
+@app.get("/api/darkweb/ransomlook/recent")
+def darkweb_ransomlook_recent_endpoint(limit: int = 50):
+    """Fetches live stream of recent victim disclosures from Ransomlook.io."""
+    return {"results": fetch_ransomlook_recent(limit=max(1, min(limit, 100)))}
+
+
+@app.get("/api/credential-leak/hudsonrock")
+def credential_hudsonrock_endpoint(domain: str):
+    """Queries HudsonRock Cavalier OSINT for compromised employee & user logins."""
+    dom = domain.strip()
+    if not dom:
+        raise HTTPException(status_code=400, detail="Domain cannot be empty.")
+    return fetch_hudsonrock_infostealer(dom)
+
+
 # ==============================================================================
 # INVESTIGATION & TRIAGE: SCRIPT & WEBSHELL SCANNER
 # ==============================================================================
@@ -950,6 +1005,23 @@ def generate_containment_endpoint(req: ContainmentRequest):
         iocs=req.iocs,
         rule_name=req.rule_name or "LAZYSOC_BLOCK",
         zone=req.zone or "untrust",
+    )
+
+
+@app.post("/api/containment/takedown")
+def containment_takedown_endpoint(req: TakedownDossierRequest):
+    """Generates a formal RFC-compliant Abuse Takedown notice email & incident dossier."""
+    tgt = req.target.strip()
+    if not tgt:
+        raise HTTPException(status_code=400, detail="Target cannot be empty.")
+    return generate_takedown_dossier(
+        target=tgt,
+        threat_type=req.threat_type or "Phishing & Credential Harvester",
+        brand_targeted=req.brand_targeted,
+        evidence_notes=req.evidence_notes,
+        ip_address=req.ip_address,
+        asn_info=req.asn_info,
+        abuse_contacts=req.abuse_contacts,
     )
 
 

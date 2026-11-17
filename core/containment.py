@@ -175,6 +175,15 @@ def generate_containment_scripts(
     for h in hashes:
         hash_lines.append(f"{h}")
 
+    # 8. ABUSE TAKEDOWN NOTICE (FOR HOSTING / REGISTRAR ESCALATION)
+    primary_target = domains[0] if domains else (ips[0] if ips else "malicious-indicator.local")
+    takedown_dossier = generate_takedown_dossier(
+        target=primary_target,
+        threat_type="Malicious Infrastructure / Phishing & C2",
+        evidence_notes=f"Identified {len(ips)} malicious IPs, {len(domains)} malicious domains, and {len(hashes)} malware payload hashes.",
+        ip_address=ips[0] if ips else None,
+    )
+
     return {
         "palo_alto": "\n".join(palo_lines),
         "fortinet": "\n".join(forti_lines),
@@ -183,9 +192,96 @@ def generate_containment_scripts(
         "windows_firewall": "\n".join(win_fw_lines),
         "edr_isolation": "\n".join(edr_lines),
         "hash_blocklist": "\n".join(hash_lines),
+        "takedown": takedown_dossier["body_text"],
         "stats": {
             "total_ips": len(ips),
             "total_domains": len(domains),
             "total_hashes": len(hashes),
         },
+    }
+
+
+def generate_takedown_dossier(
+    target: str,
+    threat_type: str = "Phishing & Credential Harvester",
+    brand_targeted: Optional[str] = None,
+    evidence_notes: Optional[str] = None,
+    ip_address: Optional[str] = None,
+    asn_info: Optional[str] = None,
+    abuse_contacts: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Generates a formal, RFC-compliant Abuse Takedown Dossier & Notification Email
+    ready for transmission to hosting providers, domain registrars, and CERT/CSIRTs.
+    """
+    clean_tgt = target.strip()
+    if clean_tgt.startswith("http://") or clean_tgt.startswith("https://"):
+        clean_tgt = clean_tgt.split("://", 1)[1]
+    clean_tgt = clean_tgt.split("/")[0].split(":")[0]
+
+    contacts = list(abuse_contacts or [])
+    if not contacts:
+        contacts = ["abuse@registrar.com", "abuse@hosting-provider.com"]
+
+    contact_str = ", ".join(contacts)
+    brand_str = brand_targeted or "Corporate Enterprise & Public Users"
+    evidence_str = (
+        evidence_notes
+        or "Active weaponized portal impersonating brand assets to harvest user credentials and bypass authentication."
+    )
+    ip_str = ip_address or "Resolved Network Edge"
+    asn_str = asn_info or "Hosting Network Operator"
+
+    subject = f"[URGENT ABUSE TAKEDOWN] Malicious Infrastructure Notice — {clean_tgt}"
+
+    plain_lines = [
+        f"To: {contact_str}",
+        f"Subject: {subject}",
+        "Importance: High / Urgent",
+        "Classification: TLP:CLEAR / LAWFUL DEFENSIVE NOTICE",
+        "",
+        "Dear Network Abuse Operations and Trust & Safety Team,",
+        "",
+        "Our Security Operations Center (SOC) has identified malicious cyber infrastructure actively operating within your managed network and IP / domain delegation.",
+        "",
+        "We formally request your immediate assistance to terminate this abusive service and mitigate ongoing harm to internet users.",
+        "",
+        "================================================================================",
+        "                            TECHNICAL INCIDENT DOSSIER",
+        "================================================================================",
+        f"Target Indicator   : {clean_tgt}",
+        f"Threat Category    : {threat_type}",
+        f"Targeted Entity    : {brand_str}",
+        f"Associated IP      : {ip_str}",
+        f"Network ASN / ISP  : {asn_str}",
+        "",
+        "Incident Description & Evidence:",
+        f"{evidence_str}",
+        "",
+        "================================================================================",
+        "                            REQUIRED MITIGATION ACTIONS",
+        "================================================================================",
+        "1. IMMEDIATE SUSPENSION: Disable DNS resolution, null-route the target IP, or suspend hosting service for the offending customer account.",
+        "2. LOG PRESERVATION: Preserve server access logs, origin IP connections, and registrant payment/account telemetry for law enforcement referral under applicable cybercrime statutes.",
+        "3. CONFIRMATION: Provide written confirmation once the abusive infrastructure has been decommissioned.",
+        "",
+        "Thank you for your prompt cooperation in maintaining internet trust and safety.",
+        "",
+        "Respectfully,",
+        "Security Operations Center (SOC) / Threat Incident Response Team",
+        "Automated via LazySOC Threat Intelligence Workbench",
+    ]
+
+    body_text = "\n".join(plain_lines)
+
+    return {
+        "success": True,
+        "target": clean_tgt,
+        "threat_type": threat_type,
+        "subject": subject,
+        "abuse_contacts": contacts,
+        "brand_targeted": brand_str,
+        "associated_ip": ip_str,
+        "asn_info": asn_str,
+        "body_text": body_text,
     }

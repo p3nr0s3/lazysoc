@@ -23,7 +23,9 @@ class MailHealthChecker:
             resolver = dns.resolver.Resolver()
             resolver.timeout = timeout
             resolver.lifetime = timeout
-            resolver.nameservers = ['1.1.1.1', '8.8.8.8', '8.8.4.4', '1.0.0.1']
+            sys_ns = list(resolver.nameservers or [])
+            fallback_ns = ['1.1.1.1', '8.8.8.8', '8.8.4.4', '1.0.0.1']
+            resolver.nameservers = sys_ns + [ns for ns in fallback_ns if ns not in sys_ns]
             # Without EDNS, large TXT answers (google.com, github.com, ...) come back
             # truncated and need a TCP retry, which many hosts/firewalls drop.
             resolver.use_edns(0, 0, 1232)
