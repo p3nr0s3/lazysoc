@@ -1040,6 +1040,20 @@
             </div>
           </div>
 
+          <!-- Card 4: Favicon MurmurHash3 Signature & Threat Pivoting -->
+          <div id="recon-favicon-card" class="col-span-1 md:col-span-2 bg-cyber-card border border-cyber-border rounded-xl p-5 space-y-3 hidden">
+            <div class="flex items-center justify-between border-b border-cyber-border/60 pb-2">
+              <span class="text-xs font-bold text-white uppercase font-mono flex items-center gap-1.5">
+                <i data-lucide="fingerprint" class="w-3.5 h-3.5 text-cyber-cyan"></i>
+                Favicon MurmurHash3 Signature & OSINT Pivoting
+              </span>
+              <span id="recon-favicon-badge" class="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">HASH PIVOT ACTIVE</span>
+            </div>
+            <div id="recon-favicon-content" class="space-y-3 text-xs font-mono text-slate-300">
+              <!-- Injected -->
+            </div>
+          </div>
+
         </div>
 
 
@@ -3140,6 +3154,7 @@
         <button onclick="switchContainmentTab('windows_firewall')" id="tab-containment-windows_firewall" class="containment-tab-btn px-3 py-1.5 rounded-t-lg font-bold text-slate-400 hover:text-white">Windows Firewall</button>
         <button onclick="switchContainmentTab('edr_isolation')" id="tab-containment-edr_isolation" class="containment-tab-btn px-3 py-1.5 rounded-t-lg font-bold text-slate-400 hover:text-white">EDR / Isolation</button>
         <button onclick="switchContainmentTab('hash_blocklist')" id="tab-containment-hash_blocklist" class="containment-tab-btn px-3 py-1.5 rounded-t-lg font-bold text-slate-400 hover:text-white">Hashes</button>
+        <button onclick="switchContainmentTab('takedown')" id="tab-containment-takedown" class="containment-tab-btn px-3 py-1.5 rounded-t-lg font-bold text-slate-400 hover:text-white flex items-center gap-1.5"><i data-lucide="mail-warning" class="w-3.5 h-3.5 text-amber-400"></i> Abuse Takedown Notice</button>
       </div>
 
       <!-- SCRIPT DISPLAY BOX -->
@@ -4588,7 +4603,7 @@ tags:
 
     function switchContainmentTab(platform) {
       activeContainmentPlatform = platform;
-      const platforms = ['palo_alto', 'fortinet', 'cisco_asa', 'iptables', 'windows_firewall', 'edr_isolation', 'hash_blocklist'];
+      const platforms = ['palo_alto', 'fortinet', 'cisco_asa', 'iptables', 'windows_firewall', 'edr_isolation', 'hash_blocklist', 'takedown'];
       platforms.forEach(p => {
         const btn = document.getElementById(`tab-containment-${p}`);
         if (btn) {
@@ -4614,7 +4629,8 @@ tags:
         iptables: 'Linux iptables / nftables Script',
         windows_firewall: 'PowerShell Windows Advanced Firewall Rules',
         edr_isolation: 'EDR Host Isolation & C2 Severing Snippets',
-        hash_blocklist: 'Malicious File Hashes (EDR Blacklist)'
+        hash_blocklist: 'Malicious File Hashes (EDR Blacklist)',
+        takedown: 'RFC-Compliant Abuse Takedown Notice & Incident Dossier'
       };
 
       labelElem.innerText = labels[activeContainmentPlatform] || 'CLI Commands';
@@ -5222,7 +5238,103 @@ tags:
         shodanBox.innerHTML = `<div class="text-slate-400 text-xs">${escapeHtml(shodan?.message || 'No open ports or active host CVEs indexed in Shodan InternetDB.')}</div>`;
       }
 
+      // Favicon mmh3 Card
+      const favCard = document.getElementById('recon-favicon-card');
+      const favContent = document.getElementById('recon-favicon-content');
+      if (data.favicon && data.favicon.found) {
+        favCard.classList.remove('hidden');
+        favContent.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-cyber-border/60">
+            <div>
+              <span class="text-slate-500">Shodan mmh3 Hash:</span>
+              <span class="text-purple-300 font-bold ml-1">${escapeHtml(data.favicon.mmh3)}</span>
+            </div>
+            <div>
+              <span class="text-slate-500">Favicon MD5:</span>
+              <span class="text-slate-300 font-mono text-[11px] ml-1">${escapeHtml(data.favicon.md5)}</span>
+            </div>
+            <div class="col-span-1 sm:col-span-2 text-[11px] text-slate-400">
+              ${escapeHtml(data.favicon.description || 'Pivots to find clones and uncloak origin servers.')}
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 pt-1">
+            <span class="text-slate-500 text-[11px]">1-Click Pivots:</span>
+            <a href="${escapeHtml(data.favicon.pivots.Shodan)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-[11px] font-bold flex items-center gap-1 transition">
+              <i data-lucide="external-link" class="w-3 h-3"></i> Shodan Pivot
+            </a>
+            <a href="${escapeHtml(data.favicon.pivots.FOFA)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-[11px] font-bold flex items-center gap-1 transition">
+              <i data-lucide="external-link" class="w-3 h-3"></i> FOFA
+            </a>
+            <a href="${escapeHtml(data.favicon.pivots.Censys)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center gap-1 transition">
+              <i data-lucide="external-link" class="w-3 h-3"></i> Censys
+            </a>
+            <a href="${escapeHtml(data.favicon.pivots.ZoomEye)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center gap-1 transition">
+              <i data-lucide="external-link" class="w-3 h-3"></i> ZoomEye
+            </a>
+            <button onclick="runTyposquatTriage(${jsArg(data.target)})" class="px-2.5 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-[11px] font-bold flex items-center gap-1 transition ml-auto">
+              <i data-lucide="scan" class="w-3 h-3 text-purple-300"></i> Check Typosquatting
+            </button>
+          </div>
+          <div id="typosquat-results-box" class="hidden mt-3 pt-3 border-t border-cyber-border/60"></div>
+        `;
+      } else {
+        favCard.classList.add('hidden');
+      }
+
       document.getElementById('recon-raw-json').innerText = JSON.stringify(data, null, 2);
+      lucide.createIcons();
+    }
+
+    async function runTyposquatTriage(domain) {
+      const box = document.getElementById('typosquat-results-box');
+      if (!box) return;
+      box.classList.remove('hidden');
+      box.innerHTML = `<div class="p-3 text-slate-400 text-xs flex items-center gap-2"><div class="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div> Scanning typosquatting permutations via active DNS (A & MX)...</div>`;
+      try {
+        const res = await fetch(`/api/recon/typosquat?domain=${encodeURIComponent(domain)}&limit=12`);
+        const data = await res.json();
+        const results = data.results || [];
+        if (results.length === 0) {
+          box.innerHTML = `<div class="p-3 text-slate-400 text-xs">No active typosquatting lookalikes detected.</div>`;
+          return;
+        }
+        box.innerHTML = `
+          <div class="space-y-2">
+            <div class="text-[11px] font-bold text-white uppercase tracking-wider flex items-center justify-between">
+              <span>Lookalike Domains & Phishing-Ready Triage</span>
+              <span class="text-slate-500 font-normal">Scanned ${results.length} permutations</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-[11px]">
+                <thead>
+                  <tr class="text-slate-500 border-b border-cyber-border">
+                    <th class="py-1.5 px-2">Domain</th>
+                    <th class="py-1.5 px-2">Status</th>
+                    <th class="py-1.5 px-2">Resolved IP(s)</th>
+                    <th class="py-1.5 px-2">Mail Server (MX)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-cyber-border/40">
+                  ${results.map(r => `
+                    <tr class="hover:bg-white/5">
+                      <td class="py-1.5 px-2 font-mono font-bold text-white">${escapeHtml(r.domain)}</td>
+                      <td class="py-1.5 px-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.status === 'phishing-ready' ? 'bg-red-500/20 text-red-300 border border-red-500/40' : (r.status === 'active-web' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-400')}">
+                          ${escapeHtml(r.risk)}
+                        </span>
+                      </td>
+                      <td class="py-1.5 px-2 font-mono text-slate-300">${escapeHtml((r.ips || []).join(', ')) || '-'}</td>
+                      <td class="py-1.5 px-2 font-mono text-slate-300">${escapeHtml((r.mx || []).join(', ')) || '-'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        box.innerHTML = `<div class="p-2 text-red-400 text-xs">Typosquat scan failed: ${escapeHtml(err.message)}</div>`;
+      }
       lucide.createIcons();
     }
 
